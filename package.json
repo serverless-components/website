@@ -1,6 +1,7 @@
 {
-  "name": "Website",
-  "version": "0.0.1",
+  "name": "@serverless/website",
+  "version": "0.1.0",
+  "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
   },
@@ -11,7 +12,8 @@
   "author": "Serverless, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@serverless/components": "^0.0.1",
+    "@serverless/components": "^0.1.0",
+    "@serverless/aws-s3": "^0.1.0",
     "ramda": "^0.26.1"
   },
   "devDependencies": {
