@@ -1,54 +1,78 @@
-# Website
-A serverless component that provisions a static website.
 
-## Usage
+&nbsp;
 
-### Declarative
+Deploy a static website to AWS S3 in seconds using [Serverless Components](https://github.com/serverless/components). Just provide your frontend code (powered by the [AwsS3 component](https://github.com/serverless-components/AwsS3)).
+
+&nbsp;
+
+1. [Install](#1-install)
+2. [Create](#2-create)
+3. [Configure](#3-configure)
+4. [Deploy](#4-deploy)
+
+&nbsp;
+
+### 1. Install
+
+```
+$ npm install -g @serverless/components
+```
+
+### 2. Create
+
+```
+$ mkdir my-website
+$ cd my-website
+```
+
+the directory should look something like this:
+
+
+```
+|- code
+  |- index.html
+|- serverless.yml
+
+```
+
+The `code` directory could either be a simple directory of html/css/js assets files, or a full fledged React app.
+
+### 3. Configure
 
 ```yml
+# serverless.yml
 
 name: my-website
 stage: dev
 
-Website@0.1.1::my-website:
-  name: my-website
-  
-  # the root of your website project
-  path: ./
-  
-  # path to the assets dir to be uploaded to S3
-  assets: ./dist
-  
-  # environment data to include in your envFile below
-  env:
-    foo: bar
+myWebsite:
+  component: @serverless/website
+  inputs:
+    # path to the directory the contains your frontend code
+    path: ./code
     
-  # path to the env file to be included in your build
-  envFile: ./src/env.js
-  
-  buildCmd: npm run build
+    # you can provide an env file path to be generated for use by your frontend code
+    envFile: ./frontend/src/env.js
+
+    # the contents of this env file
+    env:
+      API_URL: https://api.com
+
+    # if you're using React...
+    # this is the the path to the dist directory
+    assets: ./dist
+    # and this is the build command that would build the code from the path dir to the assets dir
+    buildCmd: npm run build
 ```
 
-### Programatic
-
-```js
-npm i --save @serverless/website
-```
-
-```js
-
-const website = await this.load('@serverless/website')
-
-const inputs = {
-  name: 'my-website',
-  path: process.cwd(),
-  assets: process.cwd(),
-  envFile: path.join(process.cwd(), 'src', 'env.js'),
-  env: {},
-  buildCmd: null,
-  region: 'us-east-1'
-}
-
-await website(inputs)
+### 4. Deploy
 
 ```
+$ components
+```
+
+&nbsp;
+
+### New to Components?
+
+Checkout the [Serverless Components](https://github.com/serverless/components) repo for more information.
