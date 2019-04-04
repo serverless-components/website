@@ -14,13 +14,13 @@ Deploy a static website to AWS S3 in seconds using [Serverless Components](https
 
 ### 1. Install
 
-```
+```console
 $ npm install -g @serverless/components
 ```
 
 ### 2. Create
 
-```
+```console
 $ mkdir my-website
 $ cd my-website
 ```
@@ -67,7 +67,7 @@ myWebsite:
 
 ### 4. Deploy
 
-```
+```console
 $ components
 ```
 
