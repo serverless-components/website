@@ -1,7 +1,7 @@
 
 &nbsp;
 
-Deploy a static website to AWS S3 in seconds using [Serverless Components](https://github.com/serverless/components). Just provide your frontend code (powered by the [AwsS3 component](https://github.com/serverless-components/AwsS3)).
+Deploy a static website to AWS S3 in seconds using [Serverless Components](https://github.com/serverless/components).
 
 &nbsp;
 
