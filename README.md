@@ -46,7 +46,7 @@ name: my-website
 stage: dev
 
 myWebsite:
-  component: @serverless/website
+  component: "@serverless/website"
   inputs:
     # path to the directory the contains your frontend code
     path: ./code
