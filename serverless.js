@@ -24,7 +24,7 @@ class Website extends Component {
   async default(inputs = {}) {
     const config = {
       name: inputs.name || 'serverless',
-      code: path.resolve(inputs.code || './code'),
+      code: path.resolve(inputs.code || process.cwd()),
       region: inputs.region || 'us-east-1'
     }
 
@@ -88,8 +88,7 @@ class Website extends Component {
     await this.save()
 
     const outputs = {
-      url: this.state.url,
-      env: {}
+      url: this.state.url
     }
 
     if (typeof config.build === 'object' && Object.keys(config.build.env).length !== 0) {

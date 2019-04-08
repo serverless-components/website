@@ -49,26 +49,40 @@ myWebsite:
   component: "@serverless/website"
   inputs:
     # path to the directory the contains your frontend code
-    path: ./code
+    # if you're using a framework like React, that would be the root of your frontend project, otherwise it'd be where index.html lives.
+    # default is the current working directory.
+    code: ./code
     
-    # you can provide an env file path to be generated for use by your frontend code
-    envFile: ./frontend/src/env.js
-
-    # the contents of this env file
-    env:
-      API_URL: https://api.com
-
-    # if you're using React...
-    # this is the the path to the dist directory
-    assets: ./dist
-    # and this is the build command that would build the code from the path dir to the assets dir
-    buildCmd: npm run build
+    # if your website needs to be built (e.g. using React)...
+    build:
+    
+      # the path to the build directory. default is ./build
+      dir: ./dist
+      
+      # the build command
+      command: npm run build # this is the default anyway!
+      
+      # you can provide an env file path (relative to the code path above) to be generated for use by your frontend code. By default it's './src/env.js'
+      envFile: ./frontend/src/env.js
+      
+      # the contents of this env file
+      env:
+        API_URL: https://api.com
 ```
 
 ### 4. Deploy
 
 ```console
-$ components
+Website (master)$ ⚡️components
+
+  Website › outputs:
+  url:  'http://serverless-0c4351.s3-website-us-east-1.amazonaws.com'
+
+
+  6s › dev › Website › done
+
+Website (master)$
+
 ```
 
 &nbsp;
