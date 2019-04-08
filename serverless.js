@@ -1,20 +1,7 @@
 const path = require('path')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
-const { isEmpty, mergeDeepRight } = require('ramda')
 const { Component, writeFile } = require('@serverless/components')
-
-let outputMask = ['name', 'url']
-
-const defaults = {
-  name: 'serverless',
-  path: process.cwd(),
-  assets: process.cwd(),
-  envFile: path.join(process.cwd(), 'src', 'env.js'),
-  env: {},
-  buildCmd: null,
-  region: 'us-east-1'
-}
 
 const getBucketName = (websiteName) => {
   websiteName = websiteName.toLowerCase()
@@ -35,12 +22,20 @@ class Website extends Component {
    */
 
   async default(inputs = {}) {
-    const config = mergeDeepRight(defaults, inputs)
+    const config = {
+      name: inputs.name || 'serverless',
+      code: path.resolve(inputs.code || './code'),
+      region: inputs.region || 'us-east-1'
+    }
 
-    // Ensure paths are resolved
-    config.path = path.resolve(config.path)
-    config.assets = path.resolve(config.assets)
-    config.envFile = path.resolve(config.envFile)
+    if (typeof inputs.build === 'object') {
+      config.build = {
+        dir: path.resolve(config.code, inputs.build.dir || './build'),
+        envFile: path.resolve(config.code, inputs.build.envFile || path.join('src', 'env.js')),
+        env: inputs.build.env || {},
+        command: inputs.build.command || 'npm run build'
+      }
+    }
 
     const nameChanged = this.state.name && this.state.name !== config.name
 
@@ -55,34 +50,35 @@ class Website extends Component {
 
     await bucket({ name: config.bucketName, website: true })
 
-    if (!isEmpty(config.env) && config.buildCmd) {
+    if (typeof config.build === 'object' && Object.keys(config.build.env).length === 0) {
       let script = 'window.env = {};\n'
-      for (const e in config.env) {
+      for (const e in config.build.env) {
         // eslint-disable-line
-        script += `window.env.${e} = ${JSON.stringify(config.env[e])};\n` // eslint-disable-line
+        script += `window.env.${e} = ${JSON.stringify(config.build.env[e])};\n` // eslint-disable-line
       }
-      await writeFile(config.envFile, script)
+      await writeFile(config.build.envFile, script)
     }
 
     // If a build command is provided, build the website...
-    if (config.buildCmd) {
+    if (typeof config.build === 'object' && config.build.command) {
       this.cli.status('Building')
 
-      const options = { cwd: config.path }
+      const options = { cwd: config.code }
       try {
-        await exec(config.buildCmd, options)
+        await exec(config.build.command, options)
       } catch (err) {
         console.error(err.stderr) // eslint-disable-line
         throw new Error(
           `Failed building website via "${
-            config.buildCmd
+            config.build.command
           }".  View the output above for more information.`
         )
       }
     }
 
     this.cli.status('Uploading')
-    await bucket.upload({ dir: config.assets })
+
+    await bucket.upload({ dir: typeof config.build === 'object' ? config.build.dir : config.code })
 
     config.url = `http://${config.bucketName}.s3-website-${config.region}.amazonaws.com`
 
@@ -91,9 +87,15 @@ class Website extends Component {
     this.state.url = config.url
     await this.save()
 
-    const outputs = {}
-    outputs.url = this.state.url
-    outputs.env = Object.keys(config.env) || []
+    const outputs = {
+      url: this.state.url,
+      env: {}
+    }
+
+    if (typeof config.build === 'object' && Object.keys(config.build.env).length !== 0) {
+      outputs.env = config.build.env
+    }
+
     this.cli.outputs(outputs)
     return outputs
   }

@@ -13,8 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@serverless/components": "^0.1.0",
-    "@serverless/aws-s3": "^0.1.0",
-    "ramda": "^0.26.0"
+    "@serverless/aws-s3": "^0.1.0"
   },
   "devDependencies": {
     "babel-eslint": "9.0.0",
