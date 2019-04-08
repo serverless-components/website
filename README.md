@@ -48,7 +48,7 @@ stage: dev
 myWebsite:
   component: "@serverless/website"
   inputs:
-    # path to the directory the contains your frontend code
+    # path to the directory that contains your frontend code
     # if you're using a framework like React, that would be the root of your frontend project, otherwise it'd be where index.html lives.
     # default is the current working directory.
     code: ./code
