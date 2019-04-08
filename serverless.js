@@ -88,7 +88,8 @@ class Website extends Component {
     await this.save()
 
     const outputs = {
-      url: this.state.url
+      url: this.state.url,
+      env: []
     }
 
     if (typeof config.build === 'object' && Object.keys(config.build.env).length !== 0) {
