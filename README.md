@@ -33,7 +33,16 @@ the directory should look something like this:
 |- code
   |- index.html
 |- serverless.yml
+|- .env      # your development AWS api keys
+|- .env.prod # your production AWS api keys
 
+```
+
+the `.env` files are not required if you have the aws keys set globally and you want to use a single stage, but they should look like this.
+
+```
+AWS_ACCESS_KEY_ID=XXX
+AWS_SECRET_ACCESS_KEY=XXX
 ```
 
 The `code` directory could either be a simple directory of html/css/js assets files, or a full fledged React app.
