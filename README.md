@@ -83,7 +83,7 @@ myWebsite:
 ### 4. Deploy
 
 ```console
-Website (master)$ ⚡️components
+website (master)$ ⚡️components
 
   Website › outputs:
   url:  'http://serverless-0c4351.s3-website-us-east-1.amazonaws.com'
@@ -91,7 +91,7 @@ Website (master)$ ⚡️components
 
   6s › dev › Website › done
 
-Website (master)$
+website (master)$
 
 ```
 
