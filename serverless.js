@@ -44,7 +44,7 @@ class Website extends Component {
     config.bucketName =
       this.state.bucketName && !nameChanged ? this.state.bucketName : getBucketName(config.name)
 
-    this.cli.status(`Deploying`)
+    this.ui.status(`Deploying`)
 
     const bucket = await this.load('@serverless/aws-s3')
 
@@ -61,7 +61,7 @@ class Website extends Component {
 
     // If a build command is provided, build the website...
     if (typeof config.build === 'object' && config.build.command) {
-      this.cli.status('Building')
+      this.ui.status('Building')
 
       const options = { cwd: config.code }
       try {
@@ -76,7 +76,7 @@ class Website extends Component {
       }
     }
 
-    this.cli.status('Uploading')
+    this.ui.status('Uploading')
 
     await bucket.upload({ dir: typeof config.build === 'object' ? config.build.dir : config.code })
 
@@ -96,12 +96,14 @@ class Website extends Component {
       outputs.env = config.build.env
     }
 
-    this.cli.outputs(outputs)
+    this.ui.log()
+    this.ui.output('url', this.state.url)
+
     return outputs
   }
 
   async remove() {
-    this.cli.status(`Removing`)
+    this.ui.status(`Removing`)
 
     const bucket = await this.load('@serverless/aws-s3')
 
