@@ -1,7 +1,7 @@
 const path = require('path')
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
-const { Component, writeFile } = require('@serverless/components')
+const { Component, utils } = require('@serverless/core')
 
 const getBucketName = (websiteName) => {
   websiteName = websiteName.toLowerCase()
@@ -24,7 +24,7 @@ class Website extends Component {
   async default(inputs = {}) {
     const config = {
       name: inputs.name || 'serverless',
-      code: path.resolve(inputs.code || process.cwd()),
+      code: path.resolve(inputs.code || path.join(process.cwd(), 'test')),
       region: inputs.region || 'us-east-1'
     }
 
@@ -42,9 +42,11 @@ class Website extends Component {
     // get a globally unique bucket name
     // based on the passed in name
     config.bucketName =
-      this.state.bucketName && !nameChanged ? this.state.bucketName : getBucketName(config.name)
+      this.state.bucketName && !nameChanged
+        ? this.state.bucketName
+        : utils.generateResourceName(config.name, this.context.resourceGroupId)
 
-    this.ui.status(`Deploying`)
+    this.context.status(`Deploying`)
 
     const bucket = await this.load('@serverless/aws-s3')
 
@@ -56,12 +58,12 @@ class Website extends Component {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(config.build.env[e])};\n` // eslint-disable-line
       }
-      await writeFile(config.build.envFile, script)
+      await utils.writeFile(config.build.envFile, script)
     }
 
     // If a build command is provided, build the website...
     if (typeof config.build === 'object' && config.build.command) {
-      this.ui.status('Building')
+      this.context.status('Building')
 
       const options = { cwd: config.code }
       try {
@@ -76,7 +78,7 @@ class Website extends Component {
       }
     }
 
-    this.ui.status('Uploading')
+    this.context.status('Uploading')
 
     await bucket.upload({ dir: typeof config.build === 'object' ? config.build.dir : config.code })
 
@@ -96,14 +98,14 @@ class Website extends Component {
       outputs.env = config.build.env
     }
 
-    this.ui.log()
-    this.ui.output('url', this.state.url)
+    this.context.log()
+    this.context.output('url', this.state.url)
 
     return outputs
   }
 
   async remove() {
-    this.ui.status(`Removing`)
+    this.context.status(`Removing`)
 
     const bucket = await this.load('@serverless/aws-s3')
 
