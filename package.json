@@ -12,8 +12,8 @@
   "author": "Serverless, Inc.",
   "license": "Apache",
   "dependencies": {
-    "@serverless/core": "^0.1.0",
-    "@serverless/aws-s3": "^0.3.0"
+    "@serverless/aws-s3": "^0.3.0",
+    "@serverless/core": "^0.1.23"
   },
   "devDependencies": {
     "babel-eslint": "9.0.0",

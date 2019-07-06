@@ -1,57 +1,57 @@
 const path = require('path')
 const util = require('util')
+const types = require('./serverless.types.js')
 const exec = util.promisify(require('child_process').exec)
 const { Component, utils } = require('@serverless/core')
-
-const getBucketName = (websiteName) => {
-  websiteName = websiteName.toLowerCase()
-  const bucketId = Math.random()
-    .toString(36)
-    .substring(6)
-  websiteName = `${websiteName}-${bucketId}`
-  return websiteName
-}
 
 /*
  * Website
  */
 
 class Website extends Component {
+
+  /**
+   * Types
+   */
+
+  types() { return types }
+
   /*
    * Default
    */
 
   async default(inputs = {}) {
+
+    inputs.code = inputs.code ? path.resolve(inputs.code) : null
+
+    if (!inputs.code) {
+      throw Error(`"code" is a required input.`)
+    }
+
     const config = {
-      name: inputs.name || 'serverless',
-      code: path.resolve(inputs.code || path.join(process.cwd(), 'test')),
+      code: inputs.code,
       region: inputs.region || 'us-east-1'
     }
 
-    if (typeof inputs.build === 'object') {
+    if (inputs.build && typeof inputs.build === 'object') {
       config.build = {
-        dir: path.resolve(config.code, inputs.build.dir || './build'),
-        envFile: path.resolve(config.code, inputs.build.envFile || path.join('src', 'env.js')),
+        dir: inputs.build.dir ? path.resolve(config.code, inputs.build.dir) : path.resolve(config.code, inputs.build.dir),
+        envFile: inputs.build.envFile ? path.resolve(config.code, inputs.build.envFile) : path.resolve(config.code, 'env.js'),
         env: inputs.build.env || {},
-        command: inputs.build.command || 'npm run build'
+        command: inputs.build.command || null
       }
     }
 
-    const nameChanged = this.state.name && this.state.name !== config.name
-
-    // get a globally unique bucket name
-    // based on the passed in name
-    config.bucketName =
-      this.state.bucketName && !nameChanged
-        ? this.state.bucketName
-        : utils.generateResourceName(config.name, this.context.resourceGroupId)
-
     this.context.status(`Deploying`)
 
+    this.context.status(`Preparing AWS S3 Bucket`)
     const bucket = await this.load('@serverless/aws-s3')
+    const bucketOutputs = await bucket({
+      name: this.state.bucketName,
+      website: true
+    })
 
-    await bucket({ name: config.bucketName, website: true })
-
+    this.context.status(`Bundling any environment variables`)
     if (typeof config.build === 'object' && Object.keys(config.build.env).length === 0) {
       let script = 'window.env = {};\n'
       for (const e in config.build.env) {
@@ -63,7 +63,7 @@ class Website extends Component {
 
     // If a build command is provided, build the website...
     if (typeof config.build === 'object' && config.build.command) {
-      this.context.status('Building')
+      this.context.status('Building assets')
 
       const options = { cwd: config.code }
       try {
@@ -82,11 +82,7 @@ class Website extends Component {
 
     await bucket.upload({ dir: typeof config.build === 'object' ? config.build.dir : config.code })
 
-    config.url = `http://${config.bucketName}.s3-website-${config.region}.amazonaws.com`
-
-    this.state.name = config.name
-    this.state.bucketName = config.bucketName
-    this.state.url = config.url
+    this.state.url = `http://${bucketOutputs.name}.s3-website-${config.region}.amazonaws.com`
     await this.save()
 
     const outputs = {
@@ -97,7 +93,7 @@ class Website extends Component {
     if (typeof config.build === 'object' && Object.keys(config.build.env).length !== 0) {
       outputs.env = config.build.env
     }
-
+    console.log(this.context)
     this.context.log()
     this.context.output('url', this.state.url)
 
@@ -108,7 +104,6 @@ class Website extends Component {
     this.context.status(`Removing`)
 
     const bucket = await this.load('@serverless/aws-s3')
-
     await bucket.remove()
 
     this.state = {}
