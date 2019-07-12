@@ -29,14 +29,6 @@ class Website extends Component {
     inputs.code.src = inputs.code.src ? path.resolve(inputs.code.src) : process.cwd()
     if (inputs.code.build) inputs.code.build = path.join(inputs.code.src, inputs.code.build)
 
-    let exists
-    if (inputs.code.build) exists = await utils.fileExists(path.join(inputs.code.build, 'index.js'))
-    else exists = await utils.fileExists(path.join(inputs.code.src, 'index.js'))
-
-    if (!exists) {
-      throw Error(`No index.js file found in the directory "${inputs.code.build || inputs.code.src}"`)
-    }
-
     this.context.status(`Preparing AWS S3 Bucket`)
 
     const bucket = await this.load('@serverless/aws-s3')
