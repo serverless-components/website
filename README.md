@@ -58,26 +58,13 @@ stage: dev
 myWebsite:
   component: "@serverless/website"
   inputs:
-    # path to the directory that contains your frontend code
-    # if you're using a framework like React, that would be the root of your frontend project, otherwise it'd be where index.html lives.
-    # default is the current working directory.
-    code: ./code
-    
-    # if your website needs to be built (e.g. using React)...
-    build:
-    
-      # the path to the build directory. default is ./build
-      dir: ./dist
-      
-      # the build command
-      command: npm run build # this is the default anyway!
-      
-      # you can provide an env file path (relative to the code path above) to be generated for use by your frontend code. By default it's './src/env.js'
-      envFile: ./frontend/src/env.js
-      
-      # the contents of this env file
-      env:
-        API_URL: https://api.com
+    code:
+      src: ./code # The root folder of your website
+      build: build # The folder within your 'src' directory containing your built artifacts
+      hook: npm run build # A hook to build/test/do anything to your code before uploading
+    region: us-east-1 # The AWS region to deploy your website into
+    env: # Environment variables to include in a 'env.js' file with your uploaded code.
+      API_URL: https://api.com
 ```
 
 ### 4. Deploy
@@ -87,7 +74,6 @@ website (master)$ ⚡️components
 
   Website › outputs:
   url:  'http://serverless-0c4351.s3-website-us-east-1.amazonaws.com'
-
 
   6s › dev › Website › done
 

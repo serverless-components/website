@@ -22,57 +22,51 @@ class Website extends Component {
 
   async default(inputs = {}) {
 
-    inputs.code = inputs.code ? path.resolve(inputs.code) : null
+    this.context.status('Deploying')
 
-    if (!inputs.code) {
-      throw Error(`"code" is a required input.`)
+    // Default to current working directory
+    inputs.code = inputs.code || {}
+    inputs.code.src = inputs.code.src ? path.resolve(inputs.code.src) : process.cwd()
+    if (inputs.code.build) inputs.code.build = path.join(inputs.code.src, inputs.code.build)
+
+    let exists
+    if (inputs.code.build) exists = await utils.fileExists(path.join(inputs.code.build, 'index.js'))
+    else exists = await utils.fileExists(path.join(inputs.code.src, 'index.js'))
+
+    if (!exists) {
+      throw Error(`No index.js file found in the directory "${inputs.code.build || inputs.code.src}"`)
     }
-
-    const config = {
-      code: inputs.code,
-      region: inputs.region || 'us-east-1'
-    }
-
-    if (inputs.build && typeof inputs.build === 'object') {
-      config.build = {
-        dir: inputs.build.dir ? path.resolve(config.code, inputs.build.dir) : path.resolve(config.code, inputs.build.dir),
-        envFile: inputs.build.envFile ? path.resolve(config.code, inputs.build.envFile) : path.resolve(config.code, 'env.js'),
-        env: inputs.build.env || {},
-        command: inputs.build.command || null
-      }
-    }
-
-    this.context.status(`Deploying`)
 
     this.context.status(`Preparing AWS S3 Bucket`)
+
     const bucket = await this.load('@serverless/aws-s3')
     const bucketOutputs = await bucket({
       name: this.state.bucketName,
-      website: true
+      website: true,
     })
 
-    this.context.status(`Bundling any environment variables`)
-    if (typeof config.build === 'object' && Object.keys(config.build.env).length === 0) {
-      let script = 'window.env = {};\n'
-      for (const e in config.build.env) {
-        // eslint-disable-line
-        script += `window.env.${e} = ${JSON.stringify(config.build.env[e])};\n` // eslint-disable-line
-      }
-      await utils.writeFile(config.build.envFile, script)
+    this.context.status(`Bundling environment variables`)
+    let script = 'window.env = {};\n'
+    inputs.env = inputs.env || {}
+    for (const e in inputs.env) {
+      // eslint-disable-line
+      script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
     }
+    if (inputs.code.build) await utils.writeFile(path.join(inputs.code.build, 'env.js'), script)
+    else await utils.writeFile(path.join(inputs.code.src, 'env.js'), script)
 
-    // If a build command is provided, build the website...
-    if (typeof config.build === 'object' && config.build.command) {
+    // If a hook is provided, build the website
+    if (inputs.code.hook) {
       this.context.status('Building assets')
 
-      const options = { cwd: config.code }
+      const options = { cwd: inputs.code.src }
       try {
-        await exec(config.build.command, options)
+        await exec(inputs.code.hook, options)
       } catch (err) {
         console.error(err.stderr) // eslint-disable-line
         throw new Error(
           `Failed building website via "${
-            config.build.command
+            inputs.code.hook
           }".  View the output above for more information.`
         )
       }
@@ -80,9 +74,9 @@ class Website extends Component {
 
     this.context.status('Uploading')
 
-    await bucket.upload({ dir: typeof config.build === 'object' ? config.build.dir : config.code })
+    await bucket.upload({ dir: inputs.code.build || inputs.code.src })
 
-    this.state.url = `http://${bucketOutputs.name}.s3-website-${config.region}.amazonaws.com`
+    this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
     await this.save()
 
     const outputs = {
@@ -90,15 +84,17 @@ class Website extends Component {
       env: []
     }
 
-    if (typeof config.build === 'object' && Object.keys(config.build.env).length !== 0) {
-      outputs.env = config.build.env
-    }
-    console.log(this.context)
+    outputs.env = inputs.env || {}
+
     this.context.log()
     this.context.output('url', this.state.url)
 
     return outputs
   }
+
+  /**
+   * Remove
+   */
 
   async remove() {
     this.context.status(`Removing`)

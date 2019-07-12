@@ -2,23 +2,25 @@ const types = {
   functions: {
     default: {
       description: 'Deploys an instance of this component',
-      inputs: {
-        code: {
-          description: 'The directory which contains your website code, declared by an index.js file',
+      inputs: [
+        {
+          name: 'code',
           type: 'code',
-          defaultRuntime: 'nodejs10.x',
           required: true,
+          description: 'The directory which contains your website code, declared by an index.js file',
+          defaultRuntime: 'nodejs10.x',
           runtimes: [
             'nodejs10.x',
             'nodejs8.10',
           ]
         },
-        region: {
-          description: 'The AWS region this should be located in',
-          type: 'arrayString',
-          default: 'us-east-1',
+        {
+          name: 'region',
+          type: 'value',
           required: true,
-          array: [
+          description: 'The AWS region this should be located in',
+          default: 'us-east-1',
+          options: [
             'us-east-1',
             'us-east-2',
             'us-west-1',
@@ -42,15 +44,18 @@ const types = {
             'us-gov-west-1',
           ]
         },
-        env: {
-          description: 'The environment variables to bundle with your website',
-          type: 'secrets',
+        {
+          name: 'env',
+          type: 'key_value',
+          description: 'Variables you wish to be automatically bundled into your code',
           required: false,
+          references: true,
+          multiple: true,
         },
-      },
+      ],
     },
     remove: {
-      description: 'Removes this instance of the website component',
+      description: 'Removes this instance of this component',
       inputs: {}
     }
   }
