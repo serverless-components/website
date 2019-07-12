@@ -17,6 +17,7 @@ const types = {
         {
           name: 'region',
           type: 'value',
+          valueType: 'string',
           required: true,
           description: 'The AWS region this should be located in',
           default: 'us-east-1',
@@ -46,11 +47,9 @@ const types = {
         },
         {
           name: 'env',
-          type: 'key_value',
+          type: 'key_values',
           description: 'Variables you wish to be automatically bundled into your code',
           required: false,
-          references: true,
-          multiple: true,
         },
       ],
     },
