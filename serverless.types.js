@@ -1,4 +1,5 @@
-const types = {
+module.exports = {
+  credentials: ['amazon_web_services'],
   functions: {
     default: {
       description: 'Deploys an instance of this component',
@@ -59,5 +60,3 @@ const types = {
     }
   }
 }
-
-module.exports = types

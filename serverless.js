@@ -41,25 +41,19 @@ class Website extends Component {
       region: inputs.region
     })
 
-    this.context.status(`Bundling environment variables`)
-    this.context.debug(`Bundling website environment variables.`)
-
-    let script = 'window.env = {};\n'
-    inputs.env = inputs.env || {}
-    for (const e in inputs.env) {
-      // eslint-disable-line
-      script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
+    // Build environment variables
+    if (inputs.env && Object.keys(inputs.env).length && inputs.code.src) {
+      this.context.status(`Bundling environment variables`)
+      this.context.debug(`Bundling website environment variables.`)
+      let script = 'window.env = {};\n'
+      inputs.env = inputs.env || {}
+      for (const e in inputs.env) {
+        // eslint-disable-line
+        script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
+      }
+      await utils.writeFile(path.join(inputs.code.src, 'env.js'), script)
+      this.context.debug(`Website env written to file ${envFilePath}.`)
     }
-
-    let envFilePath
-    if (inputs.code.build) {
-      envFilePath = path.join(inputs.code.build, 'env.js')
-    } else {
-      envFilePath = path.join(inputs.code.src, 'env.js')
-    }
-
-    await utils.writeFile(envFilePath, script)
-    this.context.debug(`Website env written to file ${envFilePath}.`)
 
     // If a hook is provided, build the website
     if (inputs.code.hook) {
@@ -74,7 +68,7 @@ class Website extends Component {
         throw new Error(
           `Failed building website via "${
             inputs.code.hook
-          }".  View the output above for more information.`
+          }" due to the following error: "${err.stderr}"`
         )
       }
     }
