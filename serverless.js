@@ -37,15 +37,17 @@ class Website extends Component {
       website: true,
     })
 
-    this.context.status(`Bundling environment variables`)
-    let script = 'window.env = {};\n'
-    inputs.env = inputs.env || {}
-    for (const e in inputs.env) {
-      // eslint-disable-line
-      script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
+    // Build environment variables
+    if (inputs.env && Object.keys(inputs.env).length && inputs.code.src) {
+      this.context.status(`Bundling environment variables`)
+      let script = 'window.env = {};\n'
+      inputs.env = inputs.env || {}
+      for (const e in inputs.env) {
+        // eslint-disable-line
+        script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
+      }
+      await utils.writeFile(path.join(inputs.code.src, 'env.js'), script)
     }
-    if (inputs.code.build) await utils.writeFile(path.join(inputs.code.build, 'env.js'), script)
-    else await utils.writeFile(path.join(inputs.code.src, 'env.js'), script)
 
     // If a hook is provided, build the website
     if (inputs.code.hook) {
@@ -59,7 +61,7 @@ class Website extends Component {
         throw new Error(
           `Failed building website via "${
             inputs.code.hook
-          }".  View the output above for more information.`
+          }" due to the following error: "${err.stderr}"`
         )
       }
     }
