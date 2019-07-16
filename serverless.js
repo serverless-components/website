@@ -51,7 +51,8 @@ class Website extends Component {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
       }
-      await utils.writeFile(path.join(inputs.code.src, 'env.js'), script)
+      const envFilePath = path.join(inputs.code.src, 'env.js')
+      await utils.writeFile(envFilePath, script)
       this.context.debug(`Website env written to file ${envFilePath}.`)
     }
 
