@@ -88,6 +88,8 @@ class Website extends Component {
 
     this.context.debug(`Website deployed successfully to URL: ${this.state.url}.`)
 
+    this.context.output('url', this.state.url)
+
     const outputs = {
       url: this.state.url,
       env: inputs.env || {}
