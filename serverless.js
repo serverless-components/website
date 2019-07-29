@@ -37,22 +37,22 @@ class Website extends Component {
       inputs.code.build = path.join(inputs.code.src, inputs.code.build)
     }
     inputs.region = inputs.region || 'us-east-1'
-    inputs.name = this.state.name || inputs.domain || this.context.resourceId()
+    inputs.bucketName = this.state.bucketName || inputs.domain || this.context.resourceId()
 
     this.context.status(`Preparing AWS S3 Bucket`)
     this.context.debug(`Deploying website bucket in ${inputs.region}.`)
 
     const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
     const bucketOutputs = await websiteBucket({
-      name: inputs.name,
+      name: inputs.bucketName,
       accelerated: false,
       region: inputs.region
     })
 
     const s3 = new aws.S3({ region: inputs.region, credentials: this.context.credentials.aws })
 
-    this.context.debug(`Configuring bucket ${inputs.name} for website hosting.`)
-    await configureBucketForHosting(s3, inputs.name)
+    this.context.debug(`Configuring bucket ${inputs.bucketName} for website hosting.`)
+    await configureBucketForHosting(s3, inputs.bucketName)
 
     if (inputs.domain) {
       const route53 = new aws.Route53({
@@ -130,6 +130,7 @@ class Website extends Component {
 
     await websiteBucket.upload({ dir: dirToUploadPath })
 
+    this.state.bucketName = inputs.bucketName
     this.state.domain = inputs.domain
     this.state.region = inputs.region
     this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
