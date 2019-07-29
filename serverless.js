@@ -39,12 +39,6 @@ class Website extends Component {
     inputs.region = inputs.region || 'us-east-1'
     inputs.bucketName = this.state.bucketName || inputs.domain || this.context.resourceId()
 
-    // Be eager when saving state, in case subsequent operations fail
-    this.state.bucketName = inputs.bucketName
-    this.state.domain = inputs.domain
-    this.state.region = inputs.region
-    await this.save()
-
     this.context.status(`Preparing AWS S3 Bucket`)
     this.context.debug(`Deploying website bucket in ${inputs.region}.`)
 
@@ -136,6 +130,9 @@ class Website extends Component {
 
     await websiteBucket.upload({ dir: dirToUploadPath })
 
+    this.state.bucketName = inputs.bucketName
+    this.state.domain = inputs.domain
+    this.state.region = inputs.region
     this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
     await this.save()
 
