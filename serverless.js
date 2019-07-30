@@ -32,9 +32,9 @@ class Website extends Component {
 
     // Default to current working directory
     inputs.code = inputs.code || {}
-    inputs.code.src = inputs.code.src ? path.resolve(inputs.code.src) : process.cwd()
-    if (inputs.code.build) {
-      inputs.code.build = path.join(inputs.code.src, inputs.code.build)
+    inputs.code.root = inputs.code.root ? path.resolve(inputs.code.root) : process.cwd()
+    if (inputs.code.src) {
+      inputs.code.src = path.join(inputs.code.root, inputs.code.src)
     }
     inputs.region = inputs.region || 'us-east-1'
     inputs.bucketName = this.state.bucketName || inputs.domain || this.context.resourceId()
@@ -90,7 +90,7 @@ class Website extends Component {
     }
 
     // Build environment variables
-    if (inputs.env && Object.keys(inputs.env).length && inputs.code.src) {
+    if (inputs.env && Object.keys(inputs.env).length && inputs.code.root) {
       this.context.status(`Bundling environment variables`)
       this.context.debug(`Bundling website environment variables.`)
       let script = 'window.env = {};\n'
@@ -99,7 +99,7 @@ class Website extends Component {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
       }
-      const envFilePath = path.join(inputs.code.src, 'env.js')
+      const envFilePath = path.join(inputs.code.root, 'env.js')
       await utils.writeFile(envFilePath, script)
       this.context.debug(`Website env written to file ${envFilePath}.`)
     }
@@ -107,9 +107,9 @@ class Website extends Component {
     // If a hook is provided, build the website
     if (inputs.code.hook) {
       this.context.status('Building assets')
-      this.context.debug(`Running ${inputs.code.hook} in ${inputs.code.src}.`)
+      this.context.debug(`Running ${inputs.code.hook} in ${inputs.code.root}.`)
 
-      const options = { cwd: inputs.code.src }
+      const options = { cwd: inputs.code.root }
       try {
         await exec(inputs.code.hook, options)
       } catch (err) {
@@ -122,7 +122,7 @@ class Website extends Component {
 
     this.context.status('Uploading')
 
-    const dirToUploadPath = inputs.code.build || inputs.code.src
+    const dirToUploadPath = inputs.code.src || inputs.code.root
 
     this.context.debug(
       `Uploading website files from ${dirToUploadPath} to bucket ${bucketOutputs.name}.`
