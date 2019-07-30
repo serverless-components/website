@@ -59,8 +59,8 @@ myWebsite:
   component: "@serverless/website"
   inputs:
     code:
-      src: ./code # The root folder of your website
-      build: build # The folder within your 'src' directory containing your built artifacts
+      root: ./ # The root folder of your website project.  Defaults to current working directory
+      src: ./src # The folder to be uploaded containing your built artifact
       hook: npm run build # A hook to build/test/do anything to your code before uploading
     region: us-east-1 # The AWS region to deploy your website into
     env: # Environment variables to include in a 'env.js' file with your uploaded code.
