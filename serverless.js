@@ -145,7 +145,7 @@ class Website extends Component {
     }
 
     if (inputs.domain) {
-      outputs.domain = `http://${inputs.domain}`
+      outputs.domain = `https://${inputs.domain}`
     }
 
     return outputs
