@@ -15,13 +15,12 @@ const {
  */
 
 class Website extends Component {
+
   /**
    * Types
    */
 
-  types() {
-    return types
-  }
+  types() { return types }
 
   /*
    * Default
@@ -29,6 +28,7 @@ class Website extends Component {
 
   async default(inputs = {}) {
     this.context.status('Deploying')
+    this.context.debug(`Starting Website Component.`)
 
     // Default to current working directory
     inputs.code = inputs.code || {}
@@ -37,10 +37,10 @@ class Website extends Component {
       inputs.code.src = path.join(inputs.code.root, inputs.code.src)
     }
     inputs.region = inputs.region || 'us-east-1'
-    inputs.bucketName = this.state.bucketName || inputs.domain || this.context.resourceId()
+    inputs.bucketName = this.state.bucketName || this.context.resourceId()
 
     this.context.status(`Preparing AWS S3 Bucket`)
-    this.context.debug(`Deploying website bucket in ${inputs.region}.`)
+    this.context.debug(`Preparing website AWS S3 bucket ${inputs.bucketName}.`)
 
     const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
     const bucketOutputs = await websiteBucket({
@@ -49,45 +49,13 @@ class Website extends Component {
       region: inputs.region
     })
 
+    this.state.bucketName = inputs.bucketName
+    await this.save()
+
     const s3 = new aws.S3({ region: inputs.region, credentials: this.context.credentials.aws })
 
     this.context.debug(`Configuring bucket ${inputs.bucketName} for website hosting.`)
     await configureBucketForHosting(s3, inputs.bucketName)
-
-    if (inputs.domain) {
-      const route53 = new aws.Route53({
-        region: inputs.region,
-        credentials: this.context.credentials.aws
-      })
-
-      this.context.debug(`Domain specified. Deploying redirect bucket www.${inputs.domain}.`)
-      const redirectBucket = await this.load('@serverless/aws-s3', 'redirectBucket')
-      await redirectBucket({
-        name: `www.${inputs.domain}`,
-        accelerated: false,
-        region: inputs.region
-      })
-
-      await configureBucketForRedirect(s3, `www.${inputs.domain}`, inputs.domain)
-
-      this.context.debug(`Setting domain ${inputs.domain} for bucket.`)
-      await configureDomainForBucket(route53, inputs.domain, inputs.region)
-      await configureDomainForBucket(route53, `www.${inputs.domain}`, inputs.region)
-    }
-
-    if (this.state.domain && this.state.domain !== inputs.domain) {
-      const route53 = new aws.Route53({
-        region: inputs.region,
-        credentials: this.context.credentials.aws
-      })
-      await configureDomainForBucket(route53, this.state.domain, this.state.region, 'DELETE')
-      await configureDomainForBucket(
-        route53,
-        `www.${this.state.domain}`,
-        this.state.region,
-        'DELETE'
-      )
-    }
 
     // Build environment variables
     if (inputs.env && Object.keys(inputs.env).length && inputs.code.root) {
@@ -131,22 +99,35 @@ class Website extends Component {
     await websiteBucket.upload({ dir: dirToUploadPath })
 
     this.state.bucketName = inputs.bucketName
-    this.state.domain = inputs.domain
     this.state.region = inputs.region
     this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
     await this.save()
-
-    this.context.debug(`Website deployed successfully to URL: ${this.state.url}.`)
-    this.context.output('url', this.state.url)
 
     const outputs = {
       url: this.state.url,
       env: inputs.env || {}
     }
 
+    // Configure custom domain, if specified
     if (inputs.domain) {
-      outputs.domain = `https://${inputs.domain}`
+      const domain = await this.load('@serverless/domain')
+      const subdomain = inputs.domain.split('.')[0]
+      const secondLevelDomain = inputs.domain.replace(`${subdomain}.`, '')
+
+      const domainInputs = {
+        domain: secondLevelDomain,
+        subdomains: {}
+      }
+
+      domainInputs.subdomains[subdomain] = { url: this.state.url }
+      const domainOutputs = await domain(domainInputs)
+
+      outputs.domain = domainOutputs.domains[0]
+      this.state.domain = outputs.domain
+      await this.save()
     }
+
+    this.context.debug(`Website deployed successfully to URL: ${this.state.url}.`)
 
     return outputs
   }
@@ -158,31 +139,22 @@ class Website extends Component {
   async remove() {
     this.context.status(`Removing`)
 
-    this.context.debug(`removing website bucket.`)
+    this.context.debug(`Starting Website Removal.`)
+    this.context.debug(`Removing Website bucket.`)
     const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
     await websiteBucket.remove()
 
+    // Remove custom domain, if specified
     if (this.state.domain) {
-      this.context.debug(`Domain was specified. Removing domain ${this.state.domain}.`)
-      const route53 = new aws.Route53({
-        region: this.state.region,
-        credentials: this.context.credentials.aws
-      })
-      await configureDomainForBucket(route53, this.state.domain, this.state.region, 'DELETE')
-      await configureDomainForBucket(
-        route53,
-        `www.${this.state.domain}`,
-        this.state.region,
-        'DELETE'
-      )
-
-      this.context.debug(`Removing redirect bucket.`)
-      const redirectBucket = await this.load('@serverless/aws-s3', 'redirectBucket')
-      await redirectBucket.remove()
+      this.context.debug(`Removing custom domain.`)
+      const domain = await this.load('@serverless/domain')
+      await domain.remove()
     }
 
     this.state = {}
     await this.save()
+
+    this.context.debug(`Finished Website Removal.`)
     return {}
   }
 }
