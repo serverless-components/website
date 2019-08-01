@@ -16,7 +16,7 @@ Deploy a static website to AWS S3 in seconds using [Serverless Components](https
 ### 1. Install
 
 ```console
-$ npm install -g @serverless/components
+$ npm install -g serverless
 ```
 
 ### 2. Create
@@ -33,14 +33,12 @@ the directory should look something like this:
 |- code
   |- index.html
 |- serverless.yml
-|- .env      # your development AWS api keys
-|- .env.prod # your production AWS api keys
+|- .env      # your AWS api keys
 
 ```
 
-the `.env` files are not required if you have the aws keys set globally and you want to use a single stage, but they should look like this.
-
 ```
+# .env
 AWS_ACCESS_KEY_ID=XXX
 AWS_SECRET_ACCESS_KEY=XXX
 ```
@@ -70,14 +68,7 @@ myWebsite:
 ### 4. Deploy
 
 ```console
-website (master)$ ⚡️components
-
-  Website › outputs:
-  url:  'http://serverless-0c4351.s3-website-us-east-1.amazonaws.com'
-
-  6s › dev › Website › done
-
-website (master)$
+$ serverless
 
 ```
 
