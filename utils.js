@@ -1,3 +1,5 @@
+const { utils } = require('@serverless/core')
+
 const configureBucketForHosting = async (s3, bucketName) => {
   const s3BucketPolicy = {
     Version: '2012-10-17',
@@ -38,23 +40,31 @@ const configureBucketForHosting = async (s3, bucketName) => {
     MaxAgeSeconds: 0
   }
 
-  await s3
-    .putBucketPolicy({
-      Bucket: bucketName,
-      Policy: JSON.stringify(s3BucketPolicy)
-    })
-    .promise()
+  try {
+    await s3
+      .putBucketPolicy({
+        Bucket: bucketName,
+        Policy: JSON.stringify(s3BucketPolicy)
+      })
+      .promise()
 
-  await s3
-    .putBucketCors({
-      Bucket: bucketName,
-      CORSConfiguration: {
-        CORSRules: [putPostDeleteHeadRule, getRule]
-      }
-    })
-    .promise()
+    await s3
+      .putBucketCors({
+        Bucket: bucketName,
+        CORSConfiguration: {
+          CORSRules: [putPostDeleteHeadRule, getRule]
+        }
+      })
+      .promise()
 
-  await s3.putBucketWebsite(staticHostParams).promise()
+    await s3.putBucketWebsite(staticHostParams).promise()
+  } catch (e) {
+    if (e.code === 'NoSuchBucket') {
+      await utils.sleep(2000)
+      return configureBucketForHosting(s3, bucketName)
+    }
+    throw e
+  }
 }
 
 module.exports = {

@@ -1,6 +1,6 @@
 {
   "name": "@serverless/website",
-  "version": "3.0.3",
+  "version": "3.0.6",
   "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
@@ -12,9 +12,9 @@
   "author": "Serverless, Inc.",
   "license": "Apache",
   "dependencies": {
-    "@serverless/aws-s3": "^2.0.7",
+    "@serverless/aws-s3": "^2.0.0",
     "@serverless/core": "^1.0.0",
-    "@serverless/domain": "^2.0.6",
+    "@serverless/domain": "^2.0.0",
     "aws-sdk": "^2.499.0"
   },
   "devDependencies": {
