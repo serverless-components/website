@@ -19,7 +19,7 @@ const configureBucketForHosting = async (s3, bucketName) => {
     Bucket: bucketName,
     WebsiteConfiguration: {
       ErrorDocument: {
-        Key: 'error.html'
+        Key: 'index.html'
       },
       IndexDocument: {
         Suffix: 'index.html'
