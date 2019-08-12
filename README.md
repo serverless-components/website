@@ -66,7 +66,7 @@ myWebsite:
       
     # You can specify a custom domain name for your website.
     # You must have a public hosted zone available for this domain in AWS Route53.
-    # This is done automatically for you if you've purchased the domain via AWS Route53
+    # This is done automatically for you if you've purchased the domain via AWS Route53.
     domain: www.example.com 
 ```
 
