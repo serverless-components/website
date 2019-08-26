@@ -37,7 +37,7 @@ class Website extends Component {
       inputs.code.src = path.join(inputs.code.root, inputs.code.src)
     }
     inputs.region = inputs.region || 'us-east-1'
-    inputs.bucketName = this.state.bucketName || this.context.resourceId()
+    inputs.bucketName = this.state.bucketName || inputs.bucketName || this.context.resourceId()
 
     this.context.status(`Preparing AWS S3 Bucket`)
     this.context.debug(`Preparing website AWS S3 bucket ${inputs.bucketName}.`)
