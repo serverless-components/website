@@ -15,12 +15,13 @@ const {
  */
 
 class Website extends Component {
-
   /**
    * Types
    */
 
-  types() { return types }
+  types() {
+    return types
+  }
 
   /*
    * Default
