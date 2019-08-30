@@ -63,6 +63,10 @@ myWebsite:
     region: us-east-1 # The AWS region to deploy your website into
     bucketName: myBucket # (Optional) The Bucket name where `src` files/folder will be upload. 
                          # If not provided, it will create random bucket name and upload `src` files
+    cloudFront: # (Optional)
+        waitForCreateDistribution: true  # (Optional) wait for create cloudfront distrubution to complete
+        waitForUpdateDistribution: false # (Optional) wait for update cloudfront distrubution to complete
+        customOrigin: true # (Optional)  wait for custom origin to avoid s3 bucket redirect during cloudfront creation
     env: # Environment variables to include in a 'env.js' file with your uploaded code.
       API_URL: https://api.com
       
