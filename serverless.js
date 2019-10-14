@@ -101,7 +101,7 @@ class Website extends Component {
 
     this.state.bucketName = inputs.bucketName
     this.state.region = inputs.region
-    this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
+    this.state.url = `http://${bucketOutputs.name}.s3-website.${inputs.region}.amazonaws.com`
     await this.save()
 
     const outputs = {
