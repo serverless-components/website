@@ -11,6 +11,7 @@ const {
 } = require('./utils')
 
 // Define endpoint patterns by regions
+// See https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_website_region_endpoints
 const endpointsPatterns = {
   null: 's3-website-%region%.amazonaws.com',
   'us-east-2': 's3-website.%region%.amazonaws.com',
