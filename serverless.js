@@ -10,6 +10,31 @@ const {
   configureBucketForRedirect
 } = require('./utils')
 
+// Define endpoint patterns by regions
+const endpointsPatterns = {
+  null: 's3-website-%region%.amazonaws.com',
+  'us-east-2': 's3-website.%region%.amazonaws.com',
+  'us-east-1': 's3-website-%region%.amazonaws.com',
+  'us-west-1': 's3-website-%region%.amazonaws.com',
+  'us-west-2': 's3-website-%region%.amazonaws.com',
+  'ap-east-1': 's3-website.%region%.amazonaws.com',
+  'ap-south-1': 's3-website.%region%.amazonaws.com',
+  'ap-northeast-3': 's3-website.%region%.amazonaws.com',
+  'ap-northeast-2': 's3-website.%region%.amazonaws.com',
+  'ap-southeast-1': 's3-website-%region%.amazonaws.com',
+  'ap-southeast-2': 's3-website-%region%.amazonaws.com',
+  'ap-northeast-1': 's3-website-%region%.amazonaws.com',
+  'ca-central-1': 's3-website.%region%.amazonaws.com',
+  'cn-northwest-1': 's3-website.%region%.amazonaws.com.cn',
+  'eu-central-1': 's3-website.%region%.amazonaws.com',
+  'eu-west-1': 's3-website-%region%.amazonaws.com',
+  'eu-west-2': 's3-website.%region%.amazonaws.com',
+  'eu-west-3': 's3-website.%region%.amazonaws.com',
+  'eu-north-1': 's3-website.%region%.amazonaws.com',
+  'sa-east-1': 's3-website-%region%.amazonaws.com',
+  'me-south-1': 's3-website.%region%.amazonaws.com',
+}
+
 /*
  * Website
  */
@@ -101,7 +126,14 @@ class Website extends Component {
 
     this.state.bucketName = inputs.bucketName
     this.state.region = inputs.region
-    this.state.url = `http://${bucketOutputs.name}.s3-website.${inputs.region}.amazonaws.com`
+    
+    const endpointPattern = (
+      endpointsPatterns[inputs.region] 
+      || endpointsPatterns[null]
+    ).replace('%region%', inputs.region);
+    
+    this.state.url = `http://${bucketOutputs.name}.${endpointPattern}`
+ 
     await this.save()
 
     const outputs = {
