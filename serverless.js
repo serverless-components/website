@@ -59,11 +59,12 @@ class Website extends Component {
     await configureBucketForHosting(s3, inputs.bucketName)
 
     // Build environment variables
-    if (inputs.env && Object.keys(inputs.env).length && inputs.code.root) {
+    inputs.env = inputs.env || {}
+    if (Object.keys(inputs.env).length && inputs.code.root) {
       this.context.status(`Bundling environment variables`)
       this.context.debug(`Bundling website environment variables.`)
       let script = 'window.env = {};\n'
-      inputs.env = inputs.env || {}
+ 
       for (const e in inputs.env) {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
@@ -78,7 +79,12 @@ class Website extends Component {
       this.context.status('Building assets')
       this.context.debug(`Running ${inputs.code.hook} in ${inputs.code.root}.`)
 
-      const options = { cwd: inputs.code.root }
+      const options = { 
+        cwd: inputs.code.root,
+        // Merge input & process env variables to be available for hooks execution
+        env: Object.assign(process.env, inputs.env),
+      }
+
       try {
         await exec(inputs.code.hook, options)
       } catch (err) {
