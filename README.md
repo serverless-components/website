@@ -1,4 +1,4 @@
-[![Serverless Framework Tencent Cloud Plugin](https://s3.amazonaws.com/assets.general.serverless.com/component_website_tencent/readme-website-tencent-serverless.png)](http://serverless.com)
+# Serverless Website
 
 &nbsp;
 
