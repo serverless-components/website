@@ -127,9 +127,7 @@ class Website extends Component {
 
     this.state.bucketName = inputs.bucketName
     this.state.region = inputs.region
-
     this.state.url = this.getUrl(inputs.region)
- 
     await this.save()
 
     const outputs = {
