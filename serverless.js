@@ -127,13 +127,8 @@ class Website extends Component {
 
     this.state.bucketName = inputs.bucketName
     this.state.region = inputs.region
-    
-    const endpointPattern = (
-      endpointsPatterns[inputs.region] 
-      || endpointsPatterns[null]
-    ).replace('%region%', inputs.region);
-    
-    this.state.url = `http://${bucketOutputs.name}.${endpointPattern}`
+
+    this.state.url = this.getUrl(inputs.region)
  
     await this.save()
 
@@ -164,6 +159,15 @@ class Website extends Component {
     this.context.debug(`Website deployed successfully to URL: ${this.state.url}.`)
 
     return outputs
+  }
+
+  getUrl(region) {
+    const endpointPattern = (
+      endpointsPatterns[region]
+      || endpointsPatterns[null]
+    ).replace('%region%', region)
+
+    return `http://${bucketOutputs.name}.${endpointPattern}`
   }
 
   /**
