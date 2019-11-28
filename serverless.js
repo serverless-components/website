@@ -64,7 +64,7 @@ class Website extends Component {
       this.context.status(`Bundling environment variables`)
       this.context.debug(`Bundling website environment variables.`)
       let script = 'window.env = {};\n'
- 
+
       for (const e in inputs.env) {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
@@ -79,7 +79,7 @@ class Website extends Component {
       this.context.status('Building assets')
       this.context.debug(`Running ${inputs.code.hook} in ${inputs.code.root}.`)
 
-      const options = { 
+      const options = {
         cwd: inputs.code.root,
         // Merge input & process env variables to be available for hooks execution
         env: Object.assign(process.env, inputs.env),
@@ -112,6 +112,8 @@ class Website extends Component {
 
     const outputs = {
       url: this.state.url,
+      name: bucketOutputs.name,
+      region: inputs.region,
       env: inputs.env || {}
     }
 
