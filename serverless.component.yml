@@ -1,0 +1,10 @@
+name: website
+version: 1.0.0
+author: eahefnawy
+org: serverlessinc
+description: Deploys Serverless Websites
+keywords: aws, serverless, express
+repo: https://github.com/owner/project
+readme: ''
+license: MIT
+main: ./src
