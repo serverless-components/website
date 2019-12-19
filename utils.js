@@ -1,4 +1,25 @@
 const { utils } = require('@serverless/core')
+const merge = require('lodash/merge')
+
+const createBucketPolicy = (bucketName, desiredPolicy = { Statement: {} }) => {
+  const defaultPolicy = {
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Sid: 'PublicReadGetObject',
+        Effect: 'Allow',
+        Principal: {
+          AWS: '*'
+        },
+        Action: ['s3:GetObject'],
+        Resource: [`arn:aws:s3:::${bucketName}/*`]
+      }
+    ]
+  }
+
+  const policy = merge({}, defaultPolicy, desiredPolicy)
+  return policy
+}
 
 const configureBucketForHosting = async (s3, bucketName) => {
   const s3BucketPolicy = {
@@ -68,5 +89,6 @@ const configureBucketForHosting = async (s3, bucketName) => {
 }
 
 module.exports = {
+  createBucketPolicy,
   configureBucketForHosting
 }
