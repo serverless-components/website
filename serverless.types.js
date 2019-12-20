@@ -8,12 +8,10 @@ module.exports = {
           name: 'code',
           type: 'code',
           required: true,
-          description: 'The directory which contains your website code, declared by an index.js file',
+          description:
+            'The directory which contains your website code, declared by an index.js file',
           defaultRuntime: 'nodejs10.x',
-          runtimes: [
-            'nodejs10.x',
-            'nodejs8.10',
-          ]
+          runtimes: ['nodejs10.x', 'nodejs8.10']
         },
         {
           name: 'region',
@@ -43,16 +41,30 @@ module.exports = {
             'eu-north-1',
             'sa-east-1',
             'us-gov-east-1',
-            'us-gov-west-1',
+            'us-gov-west-1'
           ]
         },
         {
           name: 'env',
           type: 'key_values',
           description: 'Variables you wish to be automatically bundled into your code',
-          required: false,
-        },
+          required: false
+        }
       ],
+      policy: (bucketName) => ({
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Sid: 'PublicReadGetObject',
+            Effect: 'Allow',
+            Principal: {
+              AWS: '*'
+            },
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${bucketName}/*`]
+          }
+        ]
+      })
     },
     remove: {
       description: 'Removes this instance of this component',

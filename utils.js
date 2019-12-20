@@ -1,73 +1,34 @@
 const { utils } = require('@serverless/core')
+const { policy } = require('./serverless.types').functions.default
 const merge = require('lodash/merge')
 
-const createBucketPolicy = (bucketName, desiredPolicy = { Statement: {} }) => {
-  const defaultPolicy = {
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Sid: 'PublicReadGetObject',
-        Effect: 'Allow',
-        Principal: {
-          AWS: '*'
-        },
-        Action: ['s3:GetObject'],
-        Resource: [`arn:aws:s3:::${bucketName}/*`]
-      }
-    ]
-  }
-
-  const policy = merge({}, defaultPolicy, desiredPolicy)
-  return policy
+const createBucketPolicy = (bucketName, desiredPolicy = {}) => {
+  const mergedPolicy = merge({}, policy(bucketName), desiredPolicy)
+  return mergedPolicy
 }
 
-const configureBucketForHosting = async (s3, bucketName) => {
-  const s3BucketPolicy = {
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Sid: 'PublicReadGetObject',
-        Effect: 'Allow',
-        Principal: {
-          AWS: '*'
-        },
-        Action: ['s3:GetObject'],
-        Resource: [`arn:aws:s3:::${bucketName}/*`]
-      }
-    ]
-  }
-  const staticHostParams = {
-    Bucket: bucketName,
-    WebsiteConfiguration: {
-      ErrorDocument: {
-        Key: 'index.html'
-      },
-      IndexDocument: {
-        Suffix: 'index.html'
-      }
-    }
-  }
-
-  const putPostDeleteHeadRule = {
-    AllowedMethods: ['PUT', 'POST', 'DELETE', 'HEAD'],
-    AllowedOrigins: ['https://*.amazonaws.com'],
-    AllowedHeaders: ['*'],
-    MaxAgeSeconds: 0
-  }
-  const getRule = {
-    AllowedMethods: ['GET'],
-    AllowedOrigins: ['*'],
-    AllowedHeaders: ['*'],
-    MaxAgeSeconds: 0
-  }
-
+const configureBucketForHosting = async (s3, bucketName, configuredPolicy) => {
   try {
     await s3
       .putBucketPolicy({
         Bucket: bucketName,
-        Policy: JSON.stringify(s3BucketPolicy)
+        Policy: JSON.stringify(createBucketPolicy(bucketName, configuredPolicy))
       })
       .promise()
+
+    const putPostDeleteHeadRule = {
+      AllowedMethods: ['PUT', 'POST', 'DELETE', 'HEAD'],
+      AllowedOrigins: ['https://*.amazonaws.com'],
+      AllowedHeaders: ['*'],
+      MaxAgeSeconds: 0
+    }
+
+    const getRule = {
+      AllowedMethods: ['GET'],
+      AllowedOrigins: ['*'],
+      AllowedHeaders: ['*'],
+      MaxAgeSeconds: 0
+    }
 
     await s3
       .putBucketCors({
@@ -78,8 +39,21 @@ const configureBucketForHosting = async (s3, bucketName) => {
       })
       .promise()
 
+    const staticHostParams = {
+      Bucket: bucketName,
+      WebsiteConfiguration: {
+        ErrorDocument: {
+          Key: 'index.html'
+        },
+        IndexDocument: {
+          Suffix: 'index.html'
+        }
+      }
+    }
+
     await s3.putBucketWebsite(staticHostParams).promise()
   } catch (e) {
+    console.log('Error')
     if (e.code === 'NoSuchBucket') {
       await utils.sleep(2000)
       return configureBucketForHosting(s3, bucketName)
@@ -89,6 +63,5 @@ const configureBucketForHosting = async (s3, bucketName) => {
 }
 
 module.exports = {
-  createBucketPolicy,
   configureBucketForHosting
 }

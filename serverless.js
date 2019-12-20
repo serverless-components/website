@@ -43,20 +43,22 @@ class Website extends Component {
     this.context.status(`Preparing AWS S3 Bucket`)
     this.context.debug(`Preparing website AWS S3 bucket ${inputs.bucketName}.`)
 
-    const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
-    const bucketOutputs = await websiteBucket({
-      name: inputs.bucketName,
-      accelerated: false,
-      region: inputs.region
-    })
-
     this.state.bucketName = inputs.bucketName
     await this.save()
 
     const s3 = new aws.S3({ region: inputs.region, credentials: this.context.credentials.aws })
 
     this.context.debug(`Configuring bucket ${inputs.bucketName} for website hosting.`)
-    await configureBucketForHosting(s3, inputs.bucketName)
+
+    const givenPolicy = inputs.policy || {}
+    await configureBucketForHosting(s3, inputs.bucketName, givenPolicy)
+
+    const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
+    const bucketOutputs = await websiteBucket({
+      name: inputs.bucketName,
+      accelerated: false,
+      region: inputs.region
+    })
 
     // Build environment variables
     inputs.env = inputs.env || {}
@@ -138,7 +140,6 @@ class Website extends Component {
 
     return outputs
   }
-
   /**
    * Remove
    */

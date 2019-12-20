@@ -12,6 +12,7 @@
   "scripts": {
     "test": "jest",
     "watch": "jest --watch",
+    "cover": "jest --collect-coverage",
     "lint": "eslint . --fix --cache"
   },
   "author": "Serverless, Inc.",
