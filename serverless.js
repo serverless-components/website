@@ -43,6 +43,16 @@ class Website extends Component {
     this.context.status(`Preparing AWS S3 Bucket`)
     this.context.debug(`Preparing website AWS S3 bucket ${inputs.bucketName}.`)
 
+    this.state.bucketName = inputs.bucketName
+    await this.save()
+
+    const s3 = new aws.S3({ region: inputs.region, credentials: this.context.credentials.aws })
+
+    this.context.debug(`Configuring bucket ${inputs.bucketName} for website hosting.`)
+
+    const givenPolicy = inputs.policy || {}
+    await configureBucketForHosting(s3, inputs.bucketName, givenPolicy)
+
     const websiteBucket = await this.load('@serverless/aws-s3', 'websiteBucket')
     const bucketOutputs = await websiteBucket({
       name: inputs.bucketName,
@@ -50,21 +60,13 @@ class Website extends Component {
       region: inputs.region
     })
 
-    this.state.bucketName = inputs.bucketName
-    await this.save()
-
-    const s3 = new aws.S3({ region: inputs.region, credentials: this.context.credentials.aws })
-
-    this.context.debug(`Configuring bucket ${inputs.bucketName} for website hosting.`)
-    await configureBucketForHosting(s3, inputs.bucketName)
-
     // Build environment variables
     inputs.env = inputs.env || {}
     if (Object.keys(inputs.env).length && inputs.code.root) {
       this.context.status(`Bundling environment variables`)
       this.context.debug(`Bundling website environment variables.`)
       let script = 'window.env = {};\n'
- 
+
       for (const e in inputs.env) {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
@@ -79,10 +81,10 @@ class Website extends Component {
       this.context.status('Building assets')
       this.context.debug(`Running ${inputs.code.hook} in ${inputs.code.root}.`)
 
-      const options = { 
+      const options = {
         cwd: inputs.code.root,
         // Merge input & process env variables to be available for hooks execution
-        env: Object.assign(process.env, inputs.env),
+        env: Object.assign(process.env, inputs.env)
       }
 
       try {
@@ -138,7 +140,6 @@ class Website extends Component {
 
     return outputs
   }
-
   /**
    * Remove
    */
