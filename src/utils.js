@@ -1,8 +1,12 @@
-const aws = require('aws-sdk')
+const AWS = require('aws-sdk')
 const fs = require('fs')
 const path = require('path')
 const klawSync = require('klaw-sync')
 const mime = require('mime-types')
+const https = require('https')
+const agent = new https.Agent({
+  keepAlive: true
+})
 
 const sleep = async (wait) => new Promise((resolve) => setTimeout(() => resolve(), wait))
 
@@ -12,6 +16,12 @@ const generateId = () =>
     .substring(6)
 
 const getClients = (credentials, region) => {
+  AWS.config.update({
+    httpOptions: {
+      agent
+    }
+  })
+
   const params = {
     region,
     credentials
@@ -20,14 +30,14 @@ const getClients = (credentials, region) => {
   // we need two S3 clients because creating/deleting buckets
   // is not available with the acceleration feature.
   return {
-    regular: new aws.S3(params),
-    accelerated: new aws.S3({ ...params, endpoint: `s3-accelerate.amazonaws.com` })
+    regular: new AWS.S3(params),
+    accelerated: new AWS.S3({ ...params, endpoint: `s3-accelerate.amazonaws.com` })
   }
 }
 
-const accelerateBucket = async (s3, bucketName, accelerated) => {
+const accelerateBucket = async (clients, bucketName, accelerated) => {
   try {
-    await s3
+    await clients.regular
       .putBucketAccelerateConfiguration({
         AccelerateConfiguration: {
           Status: accelerated ? 'Enabled' : 'Suspended'
@@ -38,39 +48,39 @@ const accelerateBucket = async (s3, bucketName, accelerated) => {
   } catch (e) {
     if (e.code === 'NoSuchBucket') {
       await sleep(2000)
-      return accelerateBucket(s3, bucketName, accelerated)
+      return accelerateBucket(clients, bucketName, accelerated)
     }
     throw e
   }
 }
 
-const bucketCreation = async (s3, Bucket) => {
+const bucketCreation = async (clients, Bucket) => {
   try {
-    await s3.headBucket({ Bucket }).promise()
+    await clients.regular.headBucket({ Bucket }).promise()
   } catch (e) {
     if (e.code === 'NotFound' || e.code === 'NoSuchBucket') {
       await sleep(2000)
-      return bucketCreation(s3, Bucket)
+      return bucketCreation(clients, Bucket)
     }
     throw new Error(e)
   }
 }
 
-const ensureBucket = async (s3, name, instance) => {
+const ensureBucket = async (clients, name, instance) => {
   try {
     await instance.debug(`Checking if bucket ${name} exists.`)
-    await s3.headBucket({ Bucket: name }).promise()
+    await clients.regular.headBucket({ Bucket: name }).promise()
   } catch (e) {
     if (e.code === 'NotFound') {
       await instance.debug(`Bucket ${name} does not exist. Creating...`)
-      await s3.createBucket({ Bucket: name }).promise()
+      await clients.regular.createBucket({ Bucket: name }).promise()
       // there's a race condition when using acceleration
       // so we need to sleep for a couple seconds. See this issue:
       // https://github.com/serverless/components/issues/428
       await instance.debug(`Bucket ${name} created. Confirming it's ready...`)
-      await bucketCreation(s3, name)
+      await bucketCreation(clients, name)
       await instance.debug(`Bucket ${name} creation confirmed. Accelerating...`)
-      await accelerateBucket(s3, name, true)
+      await accelerateBucket(clients, name, true)
     } else if (e.code === 'Forbidden' && e.message === null) {
       throw Error(`Forbidden: Invalid credentials or this AWS S3 bucket name may already be taken`)
     } else if (e.code === 'Forbidden') {
@@ -81,7 +91,20 @@ const ensureBucket = async (s3, name, instance) => {
   }
 }
 
-const uploadDir = async (s3, bucketName, dirPath) => {
+const upload = async (clients, params) => {
+  try {
+    return clients.accelerated.upload(params).promise()
+  } catch (e) {
+    // if acceleration settings are still not ready
+    // use the regular client
+    if (e.message.includes('Transfer Acceleration is not configured')) {
+      return clients.regular.upload(params).promise()
+    }
+    throw e
+  }
+}
+
+const uploadDir = async (clients, bucketName, dirPath) => {
   const items = await new Promise((resolve, reject) => {
     try {
       resolve(klawSync(dirPath))
@@ -109,13 +132,13 @@ const uploadDir = async (s3, bucketName, dirPath) => {
       ContentType: mime.lookup(path.basename(item.path)) || 'application/octet-stream'
     }
 
-    uploadItems.push(s3.upload(itemParams).promise())
+    uploadItems.push(upload(clients, itemParams))
   })
 
   await Promise.all(uploadItems)
 }
 
-const configureBucketForHosting = async (s3, bucketName) => {
+const configureBucketForHosting = async (clients, bucketName) => {
   const s3BucketPolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -156,14 +179,14 @@ const configureBucketForHosting = async (s3, bucketName) => {
   }
 
   try {
-    await s3
+    await clients.regular
       .putBucketPolicy({
         Bucket: bucketName,
         Policy: JSON.stringify(s3BucketPolicy)
       })
       .promise()
 
-    await s3
+    await clients.regular
       .putBucketCors({
         Bucket: bucketName,
         CORSConfiguration: {
@@ -172,26 +195,26 @@ const configureBucketForHosting = async (s3, bucketName) => {
       })
       .promise()
 
-    await s3.putBucketWebsite(staticHostParams).promise()
+    await clients.regular.putBucketWebsite(staticHostParams).promise()
   } catch (e) {
     if (e.code === 'NoSuchBucket') {
       await sleep(2000)
-      return configureBucketForHosting(s3, bucketName)
+      return configureBucketForHosting(clients, bucketName)
     }
     throw e
   }
 }
 
-const clearBucket = async (s3, bucketName) => {
+const clearBucket = async (clients, bucketName) => {
   try {
-    const data = await s3.listObjects({ Bucket: bucketName }).promise()
+    const data = await clients.accelerated.listObjects({ Bucket: bucketName }).promise()
 
     const items = data.Contents
     const promises = []
 
     for (var i = 0; i < items.length; i += 1) {
       var deleteParams = { Bucket: bucketName, Key: items[i].Key }
-      const delObj = s3.deleteObject(deleteParams).promise()
+      const delObj = clients.accelerated.deleteObject(deleteParams).promise()
       promises.push(delObj)
     }
 
@@ -203,9 +226,9 @@ const clearBucket = async (s3, bucketName) => {
   }
 }
 
-const deleteBucket = async (s3, bucketName) => {
+const deleteBucket = async (clients, bucketName) => {
   try {
-    await s3.deleteBucket({ Bucket: bucketName }).promise()
+    await clients.regular.deleteBucket({ Bucket: bucketName }).promise()
   } catch (error) {
     if (error.code !== 'NoSuchBucket') {
       throw error

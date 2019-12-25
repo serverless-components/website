@@ -26,28 +26,31 @@ class Website extends Component {
 
     await this.status(`Deploying Bucket`)
     await this.debug(`Deploying Bucket ${config.name} to region ${config.region}`)
-    await ensureBucket(clients.regular, config.name, this)
-
-    await this.status(`Deploying Website`)
-    if (!this.state.name) {
-      await this.debug(`Configuring bucket for hosting`)
-      await this.debug(`Uploading Website files`)
-      await Promise.all([
-        configureBucketForHosting(clients.regular, config.name),
-        uploadDir(clients.accelerated, config.name, config.src)
-      ])
-    } else {
-      await this.debug(`Uploading Website files`)
-      await uploadDir(clients.accelerated, config.name, config.src)
-    }
-
-    await this.debug(`Website ${config.name} was successfully deployed to region ${config.region}`)
-    await this.status(`Website Deployed`)
+    await ensureBucket(clients, config.name, this)
 
     this.state.name = config.name
     this.state.region = config.region
     this.state.url = config.url
     await this.save()
+
+    await this.status(`Deploying Website`)
+    if (!this.state.configured) {
+      await this.debug(`Configuring bucket for hosting`)
+      await this.debug(`Uploading Website files`)
+      await Promise.all([
+        configureBucketForHosting(clients, config.name),
+        uploadDir(clients, config.name, config.src)
+      ])
+
+      this.state.configured = true
+      await this.save()
+    } else {
+      await this.debug(`Uploading Website files`)
+      await uploadDir(clients, config.name, config.src)
+    }
+
+    await this.debug(`Website ${config.name} was successfully deployed to region ${config.region}`)
+    await this.status(`Website Deployed`)
 
     return { url: config.url }
   }
@@ -63,10 +66,10 @@ class Website extends Component {
     const clients = getClients(this.credentials.aws, this.state.region)
 
     await this.debug(`Clearing bucket ${config.name}`)
-    await clearBucket(clients.accelerated, config.name)
+    await clearBucket(clients, config.name)
 
     await this.debug(`Deleting bucket ${config.name} from the ${config.region} region`)
-    await deleteBucket(clients.regular, config.name)
+    await deleteBucket(clients, config.name)
 
     await this.debug(`Website ${config.name} was successfully removed from region ${config.region}`)
 
