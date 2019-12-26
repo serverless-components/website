@@ -58,6 +58,7 @@ myWebsite:
   inputs:
     code:
       root: ./ # The root folder of your website project.  Defaults to current working directory
+      envPath: ./ # The generate env file folder of your website project.  Defaults to current working directory
       src: ./src # The folder to be uploaded containing your built artifact
       hook: npm run build # A hook to build/test/do anything to your code before uploading
     region: us-east-1 # The AWS region to deploy your website into

@@ -37,6 +37,9 @@ class Website extends Component {
     if (inputs.code.src) {
       inputs.code.src = path.join(inputs.code.root, inputs.code.src)
     }
+    if (inputs.code.envPath) {
+      inputs.code.envPath = path.join(inputs.code.root, inputs.code.envPath)
+    }
     inputs.region = inputs.region || 'us-east-1'
     inputs.bucketName = this.state.bucketName || inputs.bucketName || this.context.resourceId()
 
@@ -60,7 +63,8 @@ class Website extends Component {
 
     // Build environment variables
     inputs.env = inputs.env || {}
-    if (Object.keys(inputs.env).length && inputs.code.root) {
+    const envPath = inputs.code.envPath || inputs.code.root
+    if (Object.keys(inputs.env).length && envPath) {
       this.context.status(`Bundling environment variables`)
       this.context.debug(`Bundling website environment variables.`)
       let script = 'window.env = {};\n'
@@ -69,7 +73,7 @@ class Website extends Component {
         // eslint-disable-line
         script += `window.env.${e} = ${JSON.stringify(inputs.env[e])};\n` // eslint-disable-line
       }
-      const envFilePath = path.join(inputs.code.root, 'env.js')
+      const envFilePath = path.join(envPath, 'env.js')
       await utils.writeFile(envFilePath, script)
       this.context.debug(`Website env written to file ${envFilePath}.`)
     }
