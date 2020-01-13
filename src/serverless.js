@@ -73,7 +73,7 @@ class Website extends Component {
       log(`Configuring bucket for hosting`)
       log(`Uploading Website files`)
       await Promise.all([
-        configureBucketForHosting(clients, config.bucketName),
+        configureBucketForHosting(clients, config.bucketName, config.indexDocument, config.errorDocument),
         uploadDir(clients, config.bucketName, config.src, this)
       ])
 
