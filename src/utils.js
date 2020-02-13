@@ -52,6 +52,7 @@ const getNakedDomain = (domain) => {
 }
 
 const shouldConfigureNakedDomain = (domain) => {
+  if (!domain) return false
   if (domain.startsWith('www') && domain.split('.').length === 3) {
     return true
   }
@@ -77,7 +78,7 @@ const getConfig = (inputs, state) => {
   config.distributionDefaults = inputs.distributionDefaults
 
   config.domain = inputs.domain
-  config.nakedDomain = getNakedDomain(inputs.domain)
+  config.nakedDomain = inputs.domain ? getNakedDomain(inputs.domain) : null
   config.domainHostedZoneId = state.domainHostedZoneId
   config.certificateArn = state.certificateArn
 
