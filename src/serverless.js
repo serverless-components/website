@@ -118,6 +118,7 @@ class Website extends Component {
 
     const outputs = {
       bucket: this.state.bucketName,
+      bucketUrl: `http://${this.state.bucketName}.s3-website-us-east-1.amazonaws.com/`,
       url: `https://${this.state.distributionUrl}`
     }
 
