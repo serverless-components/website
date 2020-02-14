@@ -9,6 +9,8 @@ const agent = new https.Agent({
   keepAlive: true
 })
 
+const log = (msg) => console.log(msg) // eslint-disable-line
+
 const sleep = async (wait) => new Promise((resolve) => setTimeout(() => resolve(), wait))
 
 const generateId = () =>
@@ -52,7 +54,9 @@ const getNakedDomain = (domain) => {
 }
 
 const shouldConfigureNakedDomain = (domain) => {
-  if (!domain) return false
+  if (!domain) {
+    return false
+  }
   if (domain.startsWith('www') && domain.split('.').length === 3) {
     return true
   }
@@ -123,18 +127,18 @@ const bucketCreation = async (clients, Bucket) => {
 
 const ensureBucket = async (clients, bucketName, instance) => {
   try {
-    await instance.debug(`Checking if bucket ${bucketName} exists.`)
+    log(`Checking if bucket ${bucketName} exists.`)
     await clients.s3.regular.headBucket({ Bucket: bucketName }).promise()
   } catch (e) {
     if (e.code === 'NotFound') {
-      await instance.debug(`Bucket ${bucketName} does not exist. Creating...`)
+      log(`Bucket ${bucketName} does not exist. Creating...`)
       await clients.s3.regular.createBucket({ Bucket: bucketName }).promise()
       // there's a race condition when using acceleration
       // so we need to sleep for a couple seconds. See this issue:
       // https://github.com/serverless/components/issues/428
-      await instance.debug(`Bucket ${bucketName} created. Confirming it's ready...`)
+      log(`Bucket ${bucketName} created. Confirming it's ready...`)
       await bucketCreation(clients, bucketName)
-      await instance.debug(`Bucket ${bucketName} creation confirmed. Accelerating...`)
+      log(`Bucket ${bucketName} creation confirmed. Accelerating...`)
       await accelerateBucket(clients, bucketName, true)
     } else if (e.code === 'Forbidden' && e.message === null) {
       throw Error(`Forbidden: Invalid credentials or this AWS S3 bucket name may already be taken`)
@@ -159,7 +163,9 @@ const upload = async (clients, params) => {
   }
 }
 
-const uploadDir = async (clients, bucketName, dirPath) => {
+const uploadDir = async (clients, bucketName, zipPath, instance) => {
+  const dirPath = await instance.unzip(zipPath)
+
   const items = await new Promise((resolve, reject) => {
     try {
       resolve(klawSync(dirPath))
@@ -340,20 +346,18 @@ const ensureCertificate = async (clients, config, instance) => {
     ValidationMethod: 'DNS'
   }
 
-  await instance.debug(`Checking if a certificate for the ${config.nakedDomain} domain exists`)
+  log(`Checking if a certificate for the ${config.nakedDomain} domain exists`)
   let certificateArn = await getCertificateArnByDomain(clients, config)
 
   if (!certificateArn) {
-    await instance.debug(
-      `Certificate for the ${config.nakedDomain} domain does not exist. Creating...`
-    )
+    log(`Certificate for the ${config.nakedDomain} domain does not exist. Creating...`)
     certificateArn = (await clients.acm.requestCertificate(params).promise()).CertificateArn
   }
 
   const certificate = await describeCertificateByArn(clients, certificateArn)
 
   if (certificate.Status !== 'ISSUED') {
-    await instance.debug(`Validating the certificate for the ${config.nakedDomain} domain.`)
+    log(`Validating the certificate for the ${config.nakedDomain} domain.`)
 
     const certificateValidationRecord = getCertificateValidationRecord(
       certificate,
@@ -946,6 +950,7 @@ const removeCloudFrontDomainDnsRecords = async (clients, config) => {
 }
 
 module.exports = {
+  log,
   generateId,
   getClients,
   getConfig,
