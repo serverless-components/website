@@ -104,6 +104,10 @@ const accelerateBucket = async (clients, bucketName, accelerated) => {
         Bucket: bucketName
       })
       .promise()
+
+    // sleep for a a second for propagation
+    // otherwise we'd get "S3 Transfer Acceleration is not configured on this bucket" error
+    await sleep(1000)
   } catch (e) {
     if (e.code === 'NoSuchBucket') {
       await sleep(2000)
