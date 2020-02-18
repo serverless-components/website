@@ -10,7 +10,7 @@ Deploy a static website to AWS S3 in seconds using [Serverless Components](https
 2. [Create](#2-create)
 3. [Configure](#3-configure)
 4. [Deploy](#4-deploy)
-5. [Get Info](#5-get-info)
+5. [Info](#5-info)
 6. [Deploy](#6-remove)
 
 &nbsp;
@@ -45,7 +45,7 @@ AWS_ACCESS_KEY_ID=XXX
 AWS_SECRET_ACCESS_KEY=XXX
 ```
 
-The `code` directory could either be a simple directory of html/css/js assets files, or a full fledged React app.
+The `src` directory could either be a simple directory of html/css/js assets files, or a full fledged React app.
 
 ### 3. Configure
 
@@ -93,7 +93,7 @@ inputs:
 $ serverless deploy
 ```
 
-### 5. Get Info
+### 5. Info
 
 ```
 $ serverless info
