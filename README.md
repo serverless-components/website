@@ -11,7 +11,7 @@ Deploy a static website to AWS S3 in seconds using [Serverless Components](https
 3. [Configure](#3-configure)
 4. [Deploy](#4-deploy)
 5. [Info](#5-info)
-6. [Deploy](#6-remove)
+6. [Remove](#6-remove)
 
 &nbsp;
 
