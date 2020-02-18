@@ -18,19 +18,19 @@ Deploy a static website to AWS S3 in seconds using [Serverless Components](https
 
 ### 1. Install
 
-```console
+```
 $ npm install -g serverless@components
 ```
 
 ### 2. Login
 
-```console
+```
 $ serverless login
 ```
 
 ### 3. Create
 
-```console
+```
 $ mkdir my-website
 $ cd my-website
 ```
@@ -80,7 +80,7 @@ inputs:
 You could also specify a build step that run before your source code is uploaded:
 
 
-```
+```yml
 # serverless.yml
 
 org: serverlessinc
@@ -116,12 +116,31 @@ More instance info at https://dashboard.serverless.com/tenants/serverlessinc/app
 
 ```
 $ serverless info
+
+serverless ⚡ framework
+
+Status:       active
+Last Action:  deploy (few seconds ago)
+Deployments:  10
+More Info:    https://dashboard.serverless-dev.com/tenants/serverlessinc/applications/myApp/component/myWebsite/stage/dev/overview
+
+bucket:    website-ru236lh
+bucketUrl: http://website-ra236lh.s3-website-us-east-1.amazonaws.com
+url:       https://d22egpgsqgt74y.cloudfront.net
+domain:    https://serverless.com
+
+myWebsite › Success
 ```
 
 ### 7. Remove
 
 ```
 $ serverless remove
+
+serverless ⚡ framework
+Action: "remove" - Stage: "dev" - App: "someWebsitemyApp" - Instance: "myWebsite"
+
+5s › myWebsite › Success
 ```
 
 &nbsp;
