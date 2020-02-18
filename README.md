@@ -122,7 +122,7 @@ serverless ⚡ framework
 Status:       active
 Last Action:  deploy (few seconds ago)
 Deployments:  10
-More Info:    https://dashboard.serverless-dev.com/tenants/serverlessinc/applications/myApp/component/myWebsite/stage/dev/overview
+More Info:    https://dashboard.serverless.com/tenants/serverlessinc/applications/myApp/component/myWebsite/stage/dev/overview
 
 bucket:    website-ru236lh
 bucketUrl: http://website-ra236lh.s3-website-us-east-1.amazonaws.com
