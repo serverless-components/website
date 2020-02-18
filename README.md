@@ -138,7 +138,7 @@ myWebsite › Success
 $ serverless remove
 
 serverless ⚡ framework
-Action: "remove" - Stage: "dev" - App: "someWebsitemyApp" - Instance: "myWebsite"
+Action: "remove" - Stage: "dev" - App: "myApp" - Instance: "myWebsite"
 
 5s › myWebsite › Success
 ```
