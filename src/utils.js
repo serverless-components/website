@@ -64,9 +64,6 @@ const shouldConfigureNakedDomain = (domain) => {
 }
 
 const getConfig = (inputs, state) => {
-  if (!inputs.src) {
-    throw new Error('Unable to deploy website. Missing inputs.src.')
-  }
   const config = {}
   config.bucketName = inputs.bucketName || state.bucketName || `website-${generateId()}`
   config.region = inputs.region || state.region || 'us-east-1'
@@ -168,7 +165,13 @@ const upload = async (clients, params) => {
 }
 
 const uploadDir = async (clients, bucketName, zipPath, instance) => {
-  const dirPath = await instance.unzip(zipPath)
+  // upload a simple website by default
+  let dirPath = path.join(__dirname, '_src')
+
+  // but if user provided src code, upload that instead
+  if (zipPath) {
+    dirPath = await instance.unzip(zipPath)
+  }
 
   const items = await new Promise((resolve, reject) => {
     try {
