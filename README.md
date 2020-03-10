@@ -3,7 +3,7 @@
 <br/>
 
 **Serverless Website Component** ⎯⎯⎯ Instantly deploy static website on serverless infrastructure with zero configuration, powered by [Serverless Components](https://github.com/serverless/components/tree/cloud).
-
+<div align="right">
 <br/>
 
 - [x] **Zero Configuration** - Just let us know the component name, then just deploy.
@@ -13,6 +13,7 @@
 - [x] **Built-in Monitoring** - Monitor your website right from the Serverless Dashboard.
 
 <br/>
+</div>
 
 <img src="/assets/deploy-demo.gif" height="250" align="right">
 
