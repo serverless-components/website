@@ -92,7 +92,7 @@ Here's a complete reference of the `serverless.yml` file for the website compone
 component: website               # (required) name of the component. In that case, it's website.
 name: my-website                 # (required) name of your website component instance.
 org: serverlessinc               # (optional) serverless dashboard org. default is the first org you created during signup.
-app: myApp                       # (optional) serverless dashboard app. default is the same as the name property.
+app: my-app                      # (optional) serverless dashboard app. default is the same as the name property.
 stage: dev                       # (optional) serverless dashboard stage. default is dev.
 
 inputs:
