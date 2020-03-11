@@ -126,7 +126,11 @@ class Website extends Component {
         subdomains: {}
       }
 
-      domainInputs.subdomains[subdomain] = { url: this.state.url }
+      domainInputs.subdomains[subdomain] = {
+        url: this.state.url,
+        bucketName: this.state.bucketName,
+        cloudFront: inputs.cloudFront
+      }
       const domainOutputs = await domain(domainInputs)
 
       outputs.domain = domainOutputs.domains[0]
