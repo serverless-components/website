@@ -99,6 +99,7 @@ stage: dev                       # (optional) serverless dashboard stage. defaul
 inputs:
   src: ./src                     # (optional) path to the source folder. default is a hello world html file.
   domain: serverless.com         # (optional) domain name. this could also be a subdomain.
+  region: us-east-2              # (optional) aws region to deploy to. default is us-east-1.
 ```
 
 Once you've chosen your configuration, run `serverless deploy` again (or simply just `serverless`) to deploy your changes.
