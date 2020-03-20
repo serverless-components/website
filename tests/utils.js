@@ -8,6 +8,14 @@ const dotenv = require('dotenv').config({ path: path.resolve(__dirname, '.env') 
 const sleep = async (wait) => new Promise((resolve) => setTimeout(() => resolve(), wait))
 
 /*
+ * Generate random id
+ */
+const generateId = () =>
+  Math.random()
+    .toString(36)
+    .substring(6)
+
+/*
  * Fetches AWS credentials from the current environment
  * either from env vars, or .env file in the /tests directory
  */
@@ -40,4 +48,4 @@ const getServerlessSdk = (orgName) => {
   return sdk
 }
 
-module.exports = { sleep, getCredentials, getServerlessSdk }
+module.exports = { sleep, generateId, getCredentials, getServerlessSdk }
