@@ -127,8 +127,8 @@ class Website extends Component {
       url: `https://${this.state.distributionUrl}`
     }
 
-    if (this.state.domain) {
-      outputs.domain = `https://${this.state.domain}`
+    if (config.domain) {
+      outputs.domain = `https://${config.domain}`
     }
 
     return outputs
