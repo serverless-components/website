@@ -313,9 +313,8 @@ const getDomainHostedZoneId = async (clients, config) => {
   )
 
   if (!hostedZone) {
-    throw Error(
-      `Domain ${config.nakedDomain} was not found in your AWS account. Please purchase it from Route53 first then try again.`
-    )
+    log(`Domain ${config.nakedDomain} was not found in your AWS account. Skipping DNS operations.`)
+    return
   }
 
   return hostedZone.Id.replace('/hostedzone/', '') // hosted zone id is always prefixed with this :(
@@ -337,7 +336,7 @@ const describeCertificateByArn = async (clients, certificateArn) => {
 }
 
 const getCertificateValidationRecord = (certificate, domain) => {
-  const domainValidationOption = certificate.DomainValidationOptions.filter(
+  const domainValidationOption = certificate.DomainValidationOptions.find(
     (option) => option.DomainName === domain
   )
 
@@ -364,34 +363,47 @@ const ensureCertificate = async (clients, config, instance) => {
   const certificate = await describeCertificateByArn(clients, certificateArn)
 
   if (certificate.Status !== 'ISSUED') {
-    log(`Validating the certificate for the ${config.nakedDomain} domain.`)
-
     const certificateValidationRecord = getCertificateValidationRecord(
       certificate,
       config.nakedDomain
     )
+    // only validate if domain/hosted zone is found in this account
+    if (config.domainHostedZoneId) {
+      log(`Validating the certificate for the ${config.nakedDomain} domain.`)
 
-    const recordParams = {
-      HostedZoneId: config.domainHostedZoneId,
-      ChangeBatch: {
-        Changes: [
-          {
-            Action: 'UPSERT',
-            ResourceRecordSet: {
-              Name: certificateValidationRecord.Name,
-              Type: certificateValidationRecord.Type,
-              TTL: 300,
-              ResourceRecords: [
-                {
-                  Value: certificateValidationRecord.Value
-                }
-              ]
+      const recordParams = {
+        HostedZoneId: config.domainHostedZoneId,
+        ChangeBatch: {
+          Changes: [
+            {
+              Action: 'UPSERT',
+              ResourceRecordSet: {
+                Name: certificateValidationRecord.Name,
+                Type: certificateValidationRecord.Type,
+                TTL: 300,
+                ResourceRecords: [
+                  {
+                    Value: certificateValidationRecord.Value
+                  }
+                ]
+              }
             }
-          }
-        ]
+          ]
+        }
       }
+      await clients.route53.changeResourceRecordSets(recordParams).promise()
+    } else {
+      // if domain is not in account, let the user validate manually
+      log(
+        `Certificate for the ${config.nakedDomain} domain was created, but not validated. Please validate it manually.`
+      )
+      log(`Certificate Validation Record Name: ${certificateValidationRecord.Name} `)
+      log(`Certificate Validation Record Type: ${certificateValidationRecord.Type} `)
+      log(`Certificate Validation Record Value: ${certificateValidationRecord.Value} `)
     }
-    await clients.route53.changeResourceRecordSets(recordParams).promise()
+  } else {
+    // if certificate status is ISSUED, mark it a as valid for CloudFront to use
+    config.certificateValid = true
   }
 
   return certificateArn
@@ -695,7 +707,8 @@ const createCloudFrontDistribution = async (clients, config) => {
     distributionConfig.CacheBehaviors = CacheBehaviors
   }
 
-  if (config.domain) {
+  // configure domain only if certificate is valid
+  if (config.certificateValid) {
     distributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',
@@ -759,7 +772,7 @@ const updateCloudFrontDistribution = async (clients, config) => {
     params.DistributionConfig.CacheBehaviors = CacheBehaviors
   }
 
-  if (config.domain) {
+  if (config.certificateValid) {
     params.DistributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',

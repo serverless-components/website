@@ -104,12 +104,17 @@ class Website extends Component {
       config = { ...config, ...newDistribution }
     }
 
-    if (config.domain && !this.state.domain) {
+    // only configure DNS for domain if it was actually found in this account
+    if (config.domainHostedZoneId && !this.state.domain) {
       log(`Configuring DNS records for domain "${config.domain}"`)
       await configureDnsForCloudFrontDistribution(clients, config)
       this.state.domain = config.domain
       this.state.nakedDomain = config.nakedDomain
       await this.save()
+    } else if (config.domain && !config.domainHostedZoneId) {
+      log(
+        `DNS recods for domain "${config.domain}" were not configured because the domain was not found in your account. Please configure the DNS records manually`
+      )
     }
 
     log(
@@ -150,8 +155,10 @@ class Website extends Component {
       )
       await removeDomainFromCloudFrontDistribution(clients, this.state)
 
-      log(`Deleting DNS records for domain "${this.state.domain}"`)
-      await removeCloudFrontDomainDnsRecords(clients, this.state)
+      if (this.state.domainHostedZoneId) {
+        log(`Deleting DNS records for domain "${this.state.domain}"`)
+        await removeCloudFrontDomainDnsRecords(clients, this.state)
+      }
     }
 
     if (this.state.distributionId) {
