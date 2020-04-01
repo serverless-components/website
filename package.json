@@ -10,23 +10,22 @@
     "url": "https://github.com/serverless-components/website"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest ./tests/integration.test.js --testEnvironment node",
     "lint": "eslint . --fix --cache"
   },
   "author": "Serverless, Inc.",
   "license": "Apache",
-  "dependencies": {
-    "@serverless/aws-s3": "^4.0.0",
-    "@serverless/core": "^1.0.0",
-    "@serverless/domain": "^2.0.0",
-    "aws-sdk": "^2.499.0"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@serverless/platform-client": "^0.24.0",
+    "axios": "^0.19.2",
     "babel-eslint": "9.0.0",
+    "dotenv": "^8.2.0",
     "eslint": "5.6.0",
     "eslint-config-prettier": "^3.6.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-prettier": "^3.0.1",
+    "jest": "^25.1.0",
     "prettier": "^1.15.3"
   }
 }
