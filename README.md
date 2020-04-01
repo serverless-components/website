@@ -24,13 +24,12 @@
 <img src="/assets/deploy-demo.gif" height="250" align="right">
 
 1. [**Install**](#1-install)
-2. [**Login**](#2-login)
-3. [**Create**](#3-create)
-4. [**Deploy**](#4-deploy)
-5. [**Configure**](#5-configure)
-6. [**Develop**](#6-develop)
-7. [**Monitor**](#7-monitor)
-8. [**Remove**](#8-remove)
+2. [**Create**](#2-create)
+3. [**Deploy**](#3-deploy)
+4. [**Configure**](#4-configure)
+5. [**Develop**](#5-develop)
+6. [**Monitor**](#6-monitor)
+7. [**Remove**](#7-remove)
 
 &nbsp;
 
@@ -41,16 +40,7 @@ To get started with component, install the latest version of the Serverless Fram
 ```
 $ npm install -g serverless
 ```
-
-### 2. Login
-
-Unlike most solutions, all component deployments run in the cloud for maximum speed and reliability. Therefore, you'll need to login to deploy, share and monitor your components.
-
-```
-$ serverless login
-```
-
-### 3. Create
+### 2. Create
 
 You can easily create a new website instance just by using the following command and template url.
 
@@ -79,7 +69,7 @@ You should now have a directory that looks something like this:
 The source directory could either contain simple html files, or an entire built React/Vue app.
 
 
-### 4. Deploy
+### 3. Deploy
 
 <img src="/assets/deploy-debug-demo.gif" height="250" align="right">
 
@@ -89,7 +79,7 @@ Your first deployment might take a little while, but subsequent deployment would
 
 <br/>
 
-### 5. Configure
+### 4. Configure
 
 The Website component is a zero configuration component, meaning that it'll work out of the box with no configuration and sane defaults. With that said, there are still some optional configuration that you can specify.
 
@@ -110,7 +100,7 @@ inputs:
 
 Once you've chosen your configuration, run `serverless deploy` again (or simply just `serverless`) to deploy your changes.
 
-### 6. Develop
+### 5. Develop
 
 Now that you've got your basic website up and running, it's time to develop that into a real world application. Instead of having to run `serverless deploy` everytime you make changes you wanna test, you could enable dev mode, which allows the CLI to watch for changes in your source directory as you develop, and deploy instantly on save. 
 
@@ -120,7 +110,7 @@ To enable dev mode, simply run the following command from within the directory c
 $ serverless dev
 ```
 
-### 7. Monitor
+### 6. Monitor
 
 Anytime you need to know more about your running website instance, you can run the following command to view the most critical info. 
 
@@ -136,7 +126,7 @@ To digg even deeper, you can pass the `--debug` flag to view the state of your c
 $ serverless info --debug
 ```
 
-### 8. Remove
+### 7. Remove
 
 If you wanna tear down your entire website infrastructure that was created during deployment, just run the following command in the directory containing the `serverless.yml` file. 
 ```
