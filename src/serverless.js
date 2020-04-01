@@ -1,3 +1,4 @@
+// testing tests
 const { Component } = require('@serverless/core')
 const {
   log,
