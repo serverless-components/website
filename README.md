@@ -8,7 +8,7 @@
 
 <br/>
 
-**Serverless Website Component** ⎯⎯⎯ Instantly deploy static website on serverless infrastructure with zero configuration, powered by [Serverless Components](https://github.com/serverless/components/tree/cloud).
+**Serverless Website Component** ⎯⎯⎯ Instantly deploy static website on serverless infrastructure with zero configuration, powered by [Serverless Components](https://github.com/serverless/components).
 
 <br/>
 
@@ -45,7 +45,7 @@ $ npm install -g serverless
 You can easily create a new website instance just by using the following command and template url.
 
 ```
-$ serverless create --template-url https://github.com/serverless/components/tree/cloud/templates/website
+$ serverless create --template-url https://github.com/serverless/components/tree/master/templates/website
 $ cd website
 ```
 
