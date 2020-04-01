@@ -2,6 +2,12 @@
 
 <br/>
 
+<p align="center">
+  <b><a href="https://github.com/serverless-components/website/tree/v1">Click Here for Version 1.0</a></b>
+</p>
+
+<br/>
+
 **Serverless Website Component** ⎯⎯⎯ Instantly deploy static website on serverless infrastructure with zero configuration, powered by [Serverless Components](https://github.com/serverless/components/tree/cloud).
 
 <br/>
