@@ -72,8 +72,6 @@ The source directory could either contain simple html files, or an entire built 
 
 ### Deploy
 
-<img src="/assets/deploy-debug-demo.gif" height="250" align="right">
-
 Once you have the directory set up, you're now ready to deploy. Just run the following command from within the directory containing the `serverless.yml` file:
 
 ```
