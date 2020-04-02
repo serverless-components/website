@@ -624,7 +624,7 @@ const getDefaultCacheBehavior = (originId, defaults = {}) => {
   const {
     allowedHttpMethods = ['HEAD', 'GET'],
     forward = {},
-    ttl = 86400,
+    ttl = 0,
     compress = false,
     smoothStreaming = false,
     viewerProtocolPolicy = 'redirect-to-https',
@@ -822,8 +822,8 @@ const invalidateCloudfrontDistribution = async (clients, config) => {
     InvalidationBatch: {
       CallerReference: String(Date.now()),
       Paths: {
-        Quantity: 1,
-        Items: ['/*']
+        Quantity: 3,
+        Items: ['/', '/index.html', '/*']
       }
     }
   }
@@ -974,7 +974,7 @@ const removeCloudFrontDomainDnsRecords = async (clients, config) => {
   try {
     await clients.route53.changeResourceRecordSets(params).promise()
   } catch (e) {
-    if (e.code !== 'InvalidChangeBatch') {
+    if (e.code !== 'InvalidChangeBatch' && e.code !== 'NoSuchHostedZone') {
       throw e
     }
   }

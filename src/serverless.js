@@ -115,6 +115,9 @@ class Website extends Component {
       log(
         `DNS recods for domain "${config.domain}" were not configured because the domain was not found in your account. Please configure the DNS records manually`
       )
+      this.state.domain = config.domain
+      this.state.nakedDomain = config.nakedDomain
+      await this.save()
     }
 
     log(
