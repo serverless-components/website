@@ -141,3 +141,22 @@ $ serverless remove --debug
 ```
 
 ### FAQs
+
+#### What AWS Resources Does This Component Create?
+
+- AWS S3 Bucket for hosting
+- AWS CloudFront for CDN
+
+And if you set a domain:
+- AWS ACM Certificate for SSL
+- AWS Route53 for DNS
+
+#### How to use a custom domain registered outside of AWS?
+If your domain is not on AWS Route53, you will have to set this up manually because the component does not have access to your registrar. Here are the general steps involved.
+
+1. Create an AWS ACM certificate for your domain. Make sure you set the "Additional Names" field to `*.yourdomain.com` as well to include all subdomains as well.
+2. After you create the certificate, it should be in a `PENDING_VALIDATION` status. Now you will need to validate your domain. We suggest you follow the DNS steps by adding the validation CNAME record you see on the AWS console to your domain via your registrar dashboard.
+3. After you add the validation record, it might take a while, but eventually the certificate should change status to `ISSUED`. Usually it takes around 5 minutes.
+4. Add your domain to the `serverless.yml` file as shown above and deploy. This step is important as it adds your domain to the cloudfront distribution.
+5. Notice the cloudfront url that is returned as an output. Copy this URL, get back to your registrar and add another CNAME record with your domain or subdomain name and a value of this cloudfront url. This ensures that your domain points to that cloudfront URL.
+6. After around 20 mins, your SSL certificate and domain should all be working and pointing to your URL. Keep in mind that if you change the `name`, `stage`, `app` or `org` properties in `serverless.yml`, this would result in a completely new instance with a new cloudfront url. This allows you to setup different domains for each stage or instance
