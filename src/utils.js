@@ -328,19 +328,30 @@ const getCertificateArnByDomain = async (clients, config) => {
   return certificate && certificate.CertificateArn ? certificate.CertificateArn : null
 }
 
-const describeCertificateByArn = async (clients, certificateArn) => {
-  const certificate = await clients.acm
-    .describeCertificate({ CertificateArn: certificateArn })
-    .promise()
-  return certificate && certificate.Certificate ? certificate.Certificate : null
-}
-
 const getCertificateValidationRecord = (certificate, domain) => {
+  if (!certificate.DomainValidationOptions) {
+    return null
+  }
   const domainValidationOption = certificate.DomainValidationOptions.find(
     (option) => option.DomainName === domain
   )
 
   return domainValidationOption.ResourceRecord
+}
+
+const describeCertificateByArn = async (clients, certificateArn, domain) => {
+  const res = await clients.acm.describeCertificate({ CertificateArn: certificateArn }).promise()
+  const certificate = res && res.Certificate ? res.Certificate : null
+
+  if (
+    certificate.Status === 'PENDING_VALIDATION' &&
+    !getCertificateValidationRecord(certificate, domain)
+  ) {
+    await sleep(1000)
+    return describeCertificateByArn(clients, certificateArn, domain)
+  }
+
+  return certificate
 }
 
 const ensureCertificate = async (clients, config, instance) => {
@@ -360,7 +371,7 @@ const ensureCertificate = async (clients, config, instance) => {
     certificateArn = (await clients.acm.requestCertificate(params).promise()).CertificateArn
   }
 
-  const certificate = await describeCertificateByArn(clients, certificateArn)
+  const certificate = await describeCertificateByArn(clients, certificateArn, config.nakedDomain)
 
   if (certificate.Status !== 'ISSUED') {
     const certificateValidationRecord = getCertificateValidationRecord(
