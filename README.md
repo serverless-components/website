@@ -21,7 +21,7 @@
 <br/>
 
 
-<img src="/assets/deploy-white.gif" width="750" align="right">
+<img src="/assets/deploy-demo.gif" height="250" align="right">
 
 * [**Install**](#install)
 * [**Create**](#create)
