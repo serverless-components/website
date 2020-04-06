@@ -520,25 +520,6 @@ const createCloudFrontDistribution = async (clients, config) => {
 
   const distributionConfig = params.DistributionConfig
 
-  // const { Origins, CacheBehaviors } = parseInputOrigins(config.distributionOrigins)
-
-  // distributionConfig.Origins = Origins
-
-  // set first origin declared as the default cache behavior
-  // distributionConfig.DefaultCacheBehavior = getDefaultCacheBehavior(
-  //   Origins.Items[0].Id,
-  //   config.distributionDefaults
-  // )
-
-  // if (CacheBehaviors) {
-  //   distributionConfig.CacheBehaviors = CacheBehaviors
-  // }
-
-  // console.log(distributionConfig.Origins)
-  // console.log(distributionConfig.CacheBehaviors)
-  // console.log(distributionConfig.DefaultCacheBehavior)
-  // console.log(config.distributionDefaults)
-
   // configure domain only if certificate is valid
   if (config.certificateValid) {
     distributionConfig.ViewerCertificate = {
