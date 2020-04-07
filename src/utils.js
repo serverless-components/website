@@ -85,7 +85,7 @@ const getConfig = (inputs, state) => {
 
   config.domain = inputs.domain
   config.nakedDomain = inputs.domain ? getNakedDomain(inputs.domain) : null
-  config.domainHostedZoneId = state.domainHostedZoneId
+  config.domainHostedZoneId = inputs.domain ? state.domainHostedZoneId : null
   config.certificateArn = state.certificateArn
 
   // if user input example.com, make sure we also setup www.example.com
