@@ -61,8 +61,9 @@ AWS_SECRET_ACCESS_KEY=XXX
 You should now have a directory that looks something like this:
 
 ```
+|- index.html
+|- package.json
 |- src
-  |- index.html
 |- serverless.yml
 |- .env
 ```
