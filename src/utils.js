@@ -18,6 +18,12 @@ const generateId = () =>
     .substring(6)
 
 const getClients = (credentials, region) => {
+  // this error message assumes that the user is running via the CLI though...
+  if (Object.keys(credentials).length === 0) {
+    const msg = `Credentials not found. Make sure you have a .env file in the cwd. - Docs: https://git.io/JvArp`
+    throw new Error(msg)
+  }
+
   AWS.config.update({
     httpOptions: {
       agent
@@ -372,7 +378,9 @@ const ensureCertificate = async (clients, config, instance) => {
 
   const certificate = await describeCertificateByArn(clients, certificateArn, config.nakedDomain)
 
-  if (certificate.Status !== 'ISSUED') {
+  log(`Certificate for ${config.nakedDomain} is in a "${certificate.Status}" status`)
+
+  if (certificate.Status === 'PENDING_VALIDATION') {
     const certificateValidationRecord = getCertificateValidationRecord(
       certificate,
       config.nakedDomain
@@ -411,9 +419,23 @@ const ensureCertificate = async (clients, config, instance) => {
       log(`Certificate Validation Record Type: ${certificateValidationRecord.Type} `)
       log(`Certificate Validation Record Value: ${certificateValidationRecord.Value} `)
     }
-  } else {
+  } else if (certificate.Status === 'ISSUED') {
     // if certificate status is ISSUED, mark it a as valid for CloudFront to use
     config.certificateValid = true
+  } else if (certificate.Status === 'SUCCESS') {
+    // nothing to do here. We just need to wait a min until the status changes to ISSUED
+  } else if (certificate.Status === 'VALIDATION_TIMED_OUT') {
+    // if 72 hours passed and the user did not validate the certificate
+    // it will timeout and the user will need to recreate and validate the certificate manulaly
+    log(
+      `Certificate validation timed out after 72 hours. Please recreate and validate the certifcate manually.`
+    )
+    log(`Your domain will not work until your certificate is created and validated .`)
+  } else {
+    // something else happened?!
+    throw new Error(
+      `Failed to validate ACM certificate. Unsupported ACM certificate status ${certificate.Status}`
+    )
   }
 
   return certificateArn
@@ -520,8 +542,9 @@ const createCloudFrontDistribution = async (clients, config) => {
 
   const distributionConfig = params.DistributionConfig
 
-  // configure domain only if certificate is valid
+  // add domain and certificate config if certificate is valid and ISSUED
   if (config.certificateValid) {
+    log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
     distributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',
@@ -530,26 +553,38 @@ const createCloudFrontDistribution = async (clients, config) => {
       CertificateSource: 'acm'
     }
 
+    log(`Adding domain "${config.domain}" to CloudFront distribution`)
     distributionConfig.Aliases = {
       Quantity: 1,
       Items: [config.domain]
     }
 
     if (shouldConfigureNakedDomain(config.domain)) {
+      log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
       distributionConfig.Aliases.Quantity = 2
       distributionConfig.Aliases.Items.push(config.nakedDomain)
     }
   }
 
-  const res = await clients.cf.createDistribution(params).promise()
+  try {
+    const res = await clients.cf.createDistribution(params).promise()
 
-  return {
-    distributionId: res.Distribution.Id,
-    distributionArn: res.Distribution.ARN,
-    distributionUrl: res.Distribution.DomainName,
-    distributionOrigins: config.distributionOrigins,
-    distributionDefaults: config.distributionDefaults,
-    distributionDescription: config.distributionDescription
+    return {
+      distributionId: res.Distribution.Id,
+      distributionArn: res.Distribution.ARN,
+      distributionUrl: res.Distribution.DomainName,
+      distributionOrigins: config.distributionOrigins,
+      distributionDefaults: config.distributionDefaults,
+      distributionDescription: config.distributionDescription
+    }
+  } catch (e) {
+    // throw a friendly error if trying to use an existing domain
+    if (e.message.includes('One or more of the CNAMEs')) {
+      throw new Error(
+        `The domain "${config.domain}" is already in use by another website or CloudFront Distribution.`
+      )
+    }
+    throw e
   }
 }
 
@@ -573,7 +608,9 @@ const updateCloudFrontDistribution = async (clients, config) => {
   // 5. then make our changes
   params.DistributionConfig.Comment = config.distributionDescription
 
+  // add domain and certificate config if certificate is valid and ISSUED
   if (config.certificateValid) {
+    log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
     params.DistributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',
@@ -582,27 +619,38 @@ const updateCloudFrontDistribution = async (clients, config) => {
       CertificateSource: 'acm'
     }
 
+    log(`Adding domain "${config.domain}" to CloudFront distribution`)
     params.DistributionConfig.Aliases = {
       Quantity: 1,
       Items: [config.domain]
     }
 
     if (shouldConfigureNakedDomain(config.domain)) {
+      log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
       params.DistributionConfig.Aliases.Quantity = 2
       params.DistributionConfig.Aliases.Items.push(config.nakedDomain)
     }
   }
 
-  // 6. then finally update!
-  const res = await clients.cf.updateDistribution(params).promise()
+  try {
+    // 6. then finally update!
+    const res = await clients.cf.updateDistribution(params).promise()
 
-  return {
-    distributionId: res.Distribution.Id,
-    distributionArn: res.Distribution.ARN,
-    distributionUrl: res.Distribution.DomainName,
-    distributionOrigins: config.distributionOrigins,
-    distributionDefaults: config.distributionDefaults,
-    distributionDescription: config.distributionDescription
+    return {
+      distributionId: res.Distribution.Id,
+      distributionArn: res.Distribution.ARN,
+      distributionUrl: res.Distribution.DomainName,
+      distributionOrigins: config.distributionOrigins,
+      distributionDefaults: config.distributionDefaults,
+      distributionDescription: config.distributionDescription
+    }
+  } catch (e) {
+    if (e.message.includes('One or more of the CNAMEs')) {
+      throw new Error(
+        `The domain "${config.domain}" is already in use by another website or CloudFront Distribution.`
+      )
+    }
+    throw e
   }
 }
 
