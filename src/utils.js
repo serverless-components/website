@@ -3,7 +3,6 @@ const fs = require('fs')
 const path = require('path')
 const klawSync = require('klaw-sync')
 const mime = require('mime-types')
-const url = require('url')
 const https = require('https')
 const agent = new https.Agent({
   keepAlive: true
@@ -19,6 +18,12 @@ const generateId = () =>
     .substring(6)
 
 const getClients = (credentials, region) => {
+  // this error message assumes that the user is running via the CLI though...
+  if (Object.keys(credentials).length === 0) {
+    const msg = `Credentials not found. Make sure you have a .env file in the cwd. - Docs: https://git.io/JvArp`
+    throw new Error(msg)
+  }
+
   AWS.config.update({
     httpOptions: {
       agent
@@ -73,7 +78,7 @@ const getConfig = (inputs, state) => {
   config.distributionId = state.distributionId
   config.distributionUrl = state.distributionUrl
   config.distributionArn = state.distributionArn
-  config.distributionOrigins = [config.bucketUrl]
+  config.distributionOrigins = [config.bucketUrl] // todo remove this as it's no longer used. Just saved to state.
   config.distributionDescription =
     inputs.distributionDescription || `Website distribution for bucket ${config.bucketName}`
   config.distributionDefaults = inputs.distributionDefaults
@@ -373,7 +378,9 @@ const ensureCertificate = async (clients, config, instance) => {
 
   const certificate = await describeCertificateByArn(clients, certificateArn, config.nakedDomain)
 
-  if (certificate.Status !== 'ISSUED') {
+  log(`Certificate for ${config.nakedDomain} is in a "${certificate.Status}" status`)
+
+  if (certificate.Status === 'PENDING_VALIDATION') {
     const certificateValidationRecord = getCertificateValidationRecord(
       certificate,
       config.nakedDomain
@@ -412,257 +419,26 @@ const ensureCertificate = async (clients, config, instance) => {
       log(`Certificate Validation Record Type: ${certificateValidationRecord.Type} `)
       log(`Certificate Validation Record Value: ${certificateValidationRecord.Value} `)
     }
-  } else {
+  } else if (certificate.Status === 'ISSUED') {
     // if certificate status is ISSUED, mark it a as valid for CloudFront to use
     config.certificateValid = true
+  } else if (certificate.Status === 'SUCCESS') {
+    // nothing to do here. We just need to wait a min until the status changes to ISSUED
+  } else if (certificate.Status === 'VALIDATION_TIMED_OUT') {
+    // if 72 hours passed and the user did not validate the certificate
+    // it will timeout and the user will need to recreate and validate the certificate manulaly
+    log(
+      `Certificate validation timed out after 72 hours. Please recreate and validate the certifcate manually.`
+    )
+    log(`Your domain will not work until your certificate is created and validated .`)
+  } else {
+    // something else happened?!
+    throw new Error(
+      `Failed to validate ACM certificate. Unsupported ACM certificate status ${certificate.Status}`
+    )
   }
 
   return certificateArn
-}
-
-const getOriginConfig = (origin) => {
-  const originUrl = typeof origin === 'string' ? origin : origin.url
-
-  const { hostname, pathname } = url.parse(originUrl)
-
-  const originConfig = {
-    Id: hostname,
-    DomainName: hostname,
-    CustomHeaders: {
-      Quantity: 0,
-      Items: []
-    },
-    OriginPath: pathname === '/' ? '' : pathname
-  }
-
-  if (originUrl.includes('s3')) {
-    const bucketName = hostname.split('.')[0]
-    originConfig.Id = bucketName
-    originConfig.DomainName = `${bucketName}.s3.amazonaws.com`
-    originConfig.S3OriginConfig = {
-      OriginAccessIdentity: ''
-    }
-  } else {
-    originConfig.CustomOriginConfig = {
-      HTTPPort: 80,
-      HTTPSPort: 443,
-      OriginProtocolPolicy: 'https-only',
-      OriginSslProtocols: {
-        Quantity: 1,
-        Items: ['TLSv1.2']
-      },
-      OriginReadTimeout: 30,
-      OriginKeepaliveTimeout: 5
-    }
-  }
-
-  return originConfig
-}
-
-function getForwardedValues(config = {}, defaults = {}) {
-  const forwardDefaults = {
-    cookies: 'none',
-    queryString: false
-  }
-  const defaultValues = { ...forwardDefaults, ...defaults }
-  const { cookies, queryString = defaultValues.queryString, headers, queryStringCacheKeys } = config
-
-  // Cookies
-  const forwardCookies = {
-    Forward: defaultValues.cookies
-  }
-
-  if (typeof cookies === 'string') {
-    forwardCookies.Forward = cookies
-  } else if (Array.isArray(cookies)) {
-    forwardCookies.Forward = 'whitelist'
-    forwardCookies.WhitelistedNames = {
-      Quantity: cookies.length,
-      Items: cookies
-    }
-  }
-
-  // Headers
-  const forwardHeaders = {
-    Quantity: 0,
-    Items: []
-  }
-
-  if (typeof headers === 'string' && headers === 'all') {
-    forwardHeaders.Quantity = 1
-    forwardHeaders.Items = ['*']
-  } else if (Array.isArray(headers)) {
-    forwardHeaders.Quantity = headers.length
-    forwardHeaders.Items = headers
-  }
-
-  // QueryStringCacheKeys
-  const forwardQueryKeys = {
-    Quantity: 0,
-    Items: []
-  }
-
-  if (Array.isArray(queryStringCacheKeys)) {
-    forwardQueryKeys.Quantity = queryStringCacheKeys.length
-    forwardQueryKeys.Items = queryStringCacheKeys
-  }
-
-  return {
-    QueryString: queryString,
-    Cookies: forwardCookies,
-    Headers: forwardHeaders,
-    QueryStringCacheKeys: forwardQueryKeys
-  }
-}
-
-const getCacheBehavior = (pathPattern, pathPatternConfig, originId) => {
-  const {
-    allowedHttpMethods = ['GET', 'HEAD'],
-    ttl,
-    compress = true,
-    smoothStreaming = false,
-    viewerProtocolPolicy = 'https-only',
-    fieldLevelEncryptionId = ''
-  } = pathPatternConfig
-
-  return {
-    ForwardedValues: getForwardedValues(pathPatternConfig.forward, {
-      cookies: 'all',
-      queryString: true
-    }),
-    MinTTL: ttl,
-    PathPattern: pathPattern,
-    TargetOriginId: originId,
-    TrustedSigners: {
-      Enabled: false,
-      Quantity: 0
-    },
-    ViewerProtocolPolicy: viewerProtocolPolicy,
-    AllowedMethods: {
-      Quantity: allowedHttpMethods.length,
-      Items: allowedHttpMethods,
-      CachedMethods: {
-        Items: ['GET', 'HEAD'],
-        Quantity: 2
-      }
-    },
-    Compress: compress,
-    SmoothStreaming: smoothStreaming,
-    DefaultTTL: ttl,
-    MaxTTL: ttl,
-    FieldLevelEncryptionId: fieldLevelEncryptionId,
-    LambdaFunctionAssociations: {
-      Quantity: 0,
-      Items: []
-    }
-  }
-}
-
-const addLambdaAtEdgeToCacheBehavior = (cacheBehavior, lambdaAtEdgeConfig = {}) => {
-  const validLambdaTriggers = [
-    'viewer-request',
-    'origin-request',
-    'origin-response',
-    'viewer-response'
-  ]
-
-  Object.keys(lambdaAtEdgeConfig).forEach((eventType) => {
-    if (!validLambdaTriggers.includes(eventType)) {
-      throw new Error(
-        `"${eventType}" is not a valid lambda trigger. See https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-cloudfront-trigger-events.html for valid event types.`
-      )
-    }
-
-    cacheBehavior.LambdaFunctionAssociations.Quantity =
-      cacheBehavior.LambdaFunctionAssociations.Quantity + 1
-    cacheBehavior.LambdaFunctionAssociations.Items.push({
-      EventType: eventType,
-      LambdaFunctionARN: lambdaAtEdgeConfig[eventType],
-      IncludeBody: true
-    })
-  })
-}
-
-const parseInputOrigins = (origins) => {
-  const distributionOrigins = {
-    Quantity: 0,
-    Items: []
-  }
-
-  const distributionCacheBehaviors = {
-    Quantity: 0,
-    Items: []
-  }
-
-  for (const origin of origins) {
-    const originConfig = getOriginConfig(origin)
-
-    distributionOrigins.Quantity = distributionOrigins.Quantity + 1
-    distributionOrigins.Items.push(originConfig)
-
-    if (typeof origin === 'object') {
-      // add any cache behaviors
-      for (const pathPattern in origin.pathPatterns) {
-        const pathPatternConfig = origin.pathPatterns[pathPattern]
-        const cacheBehavior = getCacheBehavior(pathPattern, pathPatternConfig, originConfig.Id)
-
-        addLambdaAtEdgeToCacheBehavior(cacheBehavior, pathPatternConfig['lambda@edge'])
-
-        distributionCacheBehaviors.Quantity = distributionCacheBehaviors.Quantity + 1
-        distributionCacheBehaviors.Items.push(cacheBehavior)
-      }
-    }
-  }
-
-  return {
-    Origins: distributionOrigins,
-    CacheBehaviors: distributionCacheBehaviors
-  }
-}
-
-const getDefaultCacheBehavior = (originId, defaults = {}) => {
-  const {
-    allowedHttpMethods = ['HEAD', 'GET'],
-    forward = {},
-    ttl = 0,
-    compress = false,
-    smoothStreaming = false,
-    viewerProtocolPolicy = 'redirect-to-https',
-    fieldLevelEncryptionId = ''
-  } = defaults
-
-  const defaultCacheBehavior = {
-    TargetOriginId: originId,
-    ForwardedValues: getForwardedValues(forward),
-    TrustedSigners: {
-      Enabled: false,
-      Quantity: 0,
-      Items: []
-    },
-    ViewerProtocolPolicy: viewerProtocolPolicy,
-    MinTTL: 0,
-    AllowedMethods: {
-      Quantity: allowedHttpMethods.length,
-      Items: allowedHttpMethods,
-      CachedMethods: {
-        Quantity: 2,
-        Items: ['HEAD', 'GET']
-      }
-    },
-    SmoothStreaming: smoothStreaming,
-    DefaultTTL: ttl,
-    MaxTTL: 31536000,
-    Compress: compress,
-    LambdaFunctionAssociations: {
-      Quantity: 0,
-      Items: []
-    },
-    FieldLevelEncryptionId: fieldLevelEncryptionId
-  }
-
-  addLambdaAtEdgeToCacheBehavior(defaultCacheBehavior, defaults['lambda@edge'])
-
-  return defaultCacheBehavior
 }
 
 const createCloudFrontDistribution = async (clients, config) => {
@@ -698,28 +474,77 @@ const createCloudFrontDistribution = async (clients, config) => {
       },
       PriceClass: 'PriceClass_All',
       Enabled: true,
-      HttpVersion: 'http2'
+      HttpVersion: 'http2',
+      Origins: {
+        Quantity: 1,
+        Items: [
+          {
+            Id: config.bucketName,
+            DomainName: `${config.bucketName}.s3.amazonaws.com`,
+            CustomHeaders: {
+              Quantity: 0,
+              Items: []
+            },
+            OriginPath: '',
+            S3OriginConfig: {
+              OriginAccessIdentity: ''
+            }
+          }
+        ]
+      },
+      DefaultCacheBehavior: {
+        TargetOriginId: config.bucketName,
+        ForwardedValues: {
+          QueryString: false,
+          Cookies: {
+            Forward: 'none'
+          },
+          Headers: {
+            Quantity: 0,
+            Items: []
+          },
+          QueryStringCacheKeys: {
+            Quantity: 0,
+            Items: []
+          }
+        },
+        TrustedSigners: {
+          Enabled: false,
+          Quantity: 0,
+          Items: []
+        },
+        ViewerProtocolPolicy: 'redirect-to-https',
+        MinTTL: 0,
+        AllowedMethods: {
+          Quantity: 2,
+          Items: ['HEAD', 'GET'],
+          CachedMethods: {
+            Quantity: 2,
+            Items: ['HEAD', 'GET']
+          }
+        },
+        SmoothStreaming: false,
+        DefaultTTL: 0,
+        MaxTTL: 31536000,
+        Compress: false,
+        LambdaFunctionAssociations: {
+          Quantity: 0,
+          Items: []
+        },
+        FieldLevelEncryptionId: ''
+      },
+      CacheBehaviors: {
+        Quantity: 0,
+        Items: []
+      }
     }
   }
 
   const distributionConfig = params.DistributionConfig
 
-  const { Origins, CacheBehaviors } = parseInputOrigins(config.distributionOrigins)
-
-  distributionConfig.Origins = Origins
-
-  // set first origin declared as the default cache behavior
-  distributionConfig.DefaultCacheBehavior = getDefaultCacheBehavior(
-    Origins.Items[0].Id,
-    config.distributionDefaults
-  )
-
-  if (CacheBehaviors) {
-    distributionConfig.CacheBehaviors = CacheBehaviors
-  }
-
-  // configure domain only if certificate is valid
+  // add domain and certificate config if certificate is valid and ISSUED
   if (config.certificateValid) {
+    log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
     distributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',
@@ -728,26 +553,38 @@ const createCloudFrontDistribution = async (clients, config) => {
       CertificateSource: 'acm'
     }
 
+    log(`Adding domain "${config.domain}" to CloudFront distribution`)
     distributionConfig.Aliases = {
       Quantity: 1,
       Items: [config.domain]
     }
 
     if (shouldConfigureNakedDomain(config.domain)) {
+      log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
       distributionConfig.Aliases.Quantity = 2
       distributionConfig.Aliases.Items.push(config.nakedDomain)
     }
   }
 
-  const res = await clients.cf.createDistribution(params).promise()
+  try {
+    const res = await clients.cf.createDistribution(params).promise()
 
-  return {
-    distributionId: res.Distribution.Id,
-    distributionArn: res.Distribution.ARN,
-    distributionUrl: res.Distribution.DomainName,
-    distributionOrigins: config.distributionOrigins,
-    distributionDefaults: config.distributionDefaults,
-    distributionDescription: config.distributionDescription
+    return {
+      distributionId: res.Distribution.Id,
+      distributionArn: res.Distribution.ARN,
+      distributionUrl: res.Distribution.DomainName,
+      distributionOrigins: config.distributionOrigins,
+      distributionDefaults: config.distributionDefaults,
+      distributionDescription: config.distributionDescription
+    }
+  } catch (e) {
+    // throw a friendly error if trying to use an existing domain
+    if (e.message.includes('One or more of the CNAMEs')) {
+      throw new Error(
+        `The domain "${config.domain}" is already in use by another website or CloudFront Distribution.`
+      )
+    }
+    throw e
   }
 }
 
@@ -771,19 +608,9 @@ const updateCloudFrontDistribution = async (clients, config) => {
   // 5. then make our changes
   params.DistributionConfig.Comment = config.distributionDescription
 
-  const { Origins, CacheBehaviors } = parseInputOrigins(config.distributionOrigins)
-
-  params.DistributionConfig.DefaultCacheBehavior = getDefaultCacheBehavior(
-    Origins.Items[0].Id,
-    config.DistributionDefaults
-  )
-  params.DistributionConfig.Origins = Origins
-
-  if (CacheBehaviors) {
-    params.DistributionConfig.CacheBehaviors = CacheBehaviors
-  }
-
+  // add domain and certificate config if certificate is valid and ISSUED
   if (config.certificateValid) {
+    log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
     params.DistributionConfig.ViewerCertificate = {
       ACMCertificateArn: config.certificateArn,
       SSLSupportMethod: 'sni-only',
@@ -792,27 +619,38 @@ const updateCloudFrontDistribution = async (clients, config) => {
       CertificateSource: 'acm'
     }
 
+    log(`Adding domain "${config.domain}" to CloudFront distribution`)
     params.DistributionConfig.Aliases = {
       Quantity: 1,
       Items: [config.domain]
     }
 
     if (shouldConfigureNakedDomain(config.domain)) {
+      log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
       params.DistributionConfig.Aliases.Quantity = 2
       params.DistributionConfig.Aliases.Items.push(config.nakedDomain)
     }
   }
 
-  // 6. then finally update!
-  const res = await clients.cf.updateDistribution(params).promise()
+  try {
+    // 6. then finally update!
+    const res = await clients.cf.updateDistribution(params).promise()
 
-  return {
-    distributionId: res.Distribution.Id,
-    distributionArn: res.Distribution.ARN,
-    distributionUrl: res.Distribution.DomainName,
-    distributionOrigins: config.distributionOrigins,
-    distributionDefaults: config.distributionDefaults,
-    distributionDescription: config.distributionDescription
+    return {
+      distributionId: res.Distribution.Id,
+      distributionArn: res.Distribution.ARN,
+      distributionUrl: res.Distribution.DomainName,
+      distributionOrigins: config.distributionOrigins,
+      distributionDefaults: config.distributionDefaults,
+      distributionDescription: config.distributionDescription
+    }
+  } catch (e) {
+    if (e.message.includes('One or more of the CNAMEs')) {
+      throw new Error(
+        `The domain "${config.domain}" is already in use by another website or CloudFront Distribution.`
+      )
+    }
+    throw e
   }
 }
 

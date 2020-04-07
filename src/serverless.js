@@ -55,11 +55,9 @@ class Website extends Component {
         config.domainHostedZoneId = this.state.domainHostedZoneId
       }
 
-      if (!config.certificateArn) {
-        this.state.certificateArn = await ensureCertificate(clients, config, this)
-        await this.save()
-        config.certificateArn = this.state.certificateArn
-      }
+      this.state.certificateArn = await ensureCertificate(clients, config, this)
+      await this.save()
+      config.certificateArn = this.state.certificateArn
     }
 
     log(`Deploying Bucket ${config.bucketName} to region ${config.region}`)
