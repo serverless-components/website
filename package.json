@@ -1,6 +1,6 @@
 {
-  "name": "@serverless/website",
-  "version": "4.0.0",
+  "name": "@serverless/website-morgler",
+  "version": "0.0.1",
   "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
@@ -13,7 +13,7 @@
     "test": "jest ./tests/integration.test.js --testEnvironment node",
     "lint": "eslint . --fix --cache"
   },
-  "author": "Serverless, Inc.",
+  "author": "Matthias Orgler (based on work by Serverless Inc.)",
   "license": "Apache",
   "dependencies": {},
   "devDependencies": {

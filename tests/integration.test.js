@@ -7,9 +7,9 @@ jest.setTimeout(30000)
 
 // the yaml file we're testing against
 const instanceYaml = {
-  org: 'serverlessinc',
-  app: 'myApp',
-  component: 'website@dev',
+  org: 'morgler',
+  app: 'dummyApp',
+  component: 'website-morgler@dev',
   name: `website-integration-tests-${generateId()}`,
   stage: 'dev',
   inputs: {} // should deploy with zero inputs
