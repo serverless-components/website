@@ -1,5 +1,5 @@
 name: website-morgler
-version: 0.0.1
+version: 0.0.2
 author: morgler (based on work by eahefnawy)
 org: morgler
 description: Deploys Serverless Websites. Modified from original by eahefnawy

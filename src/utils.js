@@ -157,16 +157,20 @@ const ensureBucket = async (clients, bucketName, instance) => {
 }
 
 const upload = async (clients, params) => {
-  try {
-    return clients.s3.accelerated.upload(params).promise()
-  } catch (e) {
-    // if acceleration settings are still not ready
-    // use the regular client
-    if (e.message.includes('Transfer Acceleration is not configured')) {
-      return clients.s3.regular.upload(params).promise()
+  return new Promise(async (resolve, reject) => {
+    try {
+      const result = await clients.s3.accelerated.upload(params)
+      resolve(result)
+    } catch (e) {
+      // if acceleration settings are still not ready
+      // use the regular client
+      if (e.message.includes('Transfer Acceleration is not configured')) {
+        const result = await clients.s3.regular.upload(params)
+        resolve(result)
+      }
+      reject(e)
     }
-    throw e
-  }
+  })
 }
 
 const uploadDir = async (clients, bucketName, zipPath, instance) => {
