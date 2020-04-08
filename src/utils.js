@@ -480,7 +480,7 @@ const createCloudFrontDistribution = async (clients, config) => {
         Items: [
           {
             Id: config.bucketName,
-            DomainName: `${config.bucketName}.s3.amazonaws.com`,
+            DomainName: `${config.bucketName}.s3.${config.region}.amazonaws.com`,
             CustomHeaders: {
               Quantity: 0,
               Items: []

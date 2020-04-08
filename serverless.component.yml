@@ -1,10 +1,10 @@
-name: website
-version: 0.0.15
-author: eahefnawy
-org: serverlessinc
-description: Deploys Serverless Websites
+name: website-morgler
+version: 0.0.1
+author: morgler (based on work by eahefnawy)
+org: morgler
+description: Deploys Serverless Websites. Modified from original by eahefnawy
 keywords: aws, serverless, express
-repo: https://github.com/owner/project
+repo: https://github.com/morgler/website
 readme: ''
 license: MIT
 main: ./src
