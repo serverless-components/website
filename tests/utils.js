@@ -1,6 +1,6 @@
 const path = require('path')
 const { ServerlessSDK } = require('@serverless/platform-client')
-const dotenv = require('dotenv').config({ path: path.resolve(__dirname, '.env') }).parsed || {}
+require('dotenv').config()
 
 /*
  * Pauses execution for an X period of time
@@ -22,12 +22,12 @@ const generateId = () =>
 const getCredentials = () => {
   const credentials = {
     aws: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || dotenv.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dotenv.AWS_SECRET_ACCESS_KEY
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     }
   }
 
-  if (!credentials.aws.accessKeyId || !credentials.aws.accessKeyId) {
+  if (!credentials.aws.accessKeyId || !credentials.aws.secretAccessKey) {
     throw new Error('Unable to run tests. AWS credentials not found in the envionrment')
   }
 
@@ -40,7 +40,7 @@ const getCredentials = () => {
  */
 const getServerlessSdk = (orgName) => {
   const sdk = new ServerlessSDK({
-    accessKey: process.env.SERVERLESS_ACCESS_KEY || dotenv.SERVERLESS_ACCESS_KEY,
+    accessKey: process.env.SERVERLESS_ACCESS_KEY,
     context: {
       orgName
     }
