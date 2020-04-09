@@ -433,6 +433,12 @@ const ensureCertificate = async (clients, config, instance) => {
         }
       }
       await clients.route53.changeResourceRecordSets(recordParams).promise()
+      log(
+        `Your certificate was created and is being validated. It may take a few mins to validate.`
+      )
+      log(
+        `Please deploy again after few mins to use your newly validated certificate and activate your domain.`
+      )
     } else {
       // if domain is not in account, let the user validate manually
       log(

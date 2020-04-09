@@ -70,6 +70,13 @@ You should now have a directory that looks something like this:
 
 The source directory could either contain simple html files, or an entire built React/Vue app.
 
+### Build
+
+This template above requires running npm install and build in its root directory, to install the React framework and build it.
+
+```
+$ npm install && npm run build
+```
 
 ### Deploy
 

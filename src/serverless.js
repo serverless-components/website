@@ -33,7 +33,7 @@ class Website extends Component {
     }
 
     // Throw error on domain change
-    if (this.state.domain && this.state.domain !== config.domain) {
+    if (config.domain && this.state.domain && this.state.domain !== config.domain) {
       throw new Error(
         `Changing the domain from ${this.state.domain} to ${config.domain} will remove your infrastructure.  Please remove it manually, change the domain, then re-deploy.`
       )
