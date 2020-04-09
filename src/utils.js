@@ -176,20 +176,7 @@ const callAcceleratedOrRegular = async (clients, method, params) => {
 }
 
 const upload = async (clients, params) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const result = await clients.s3.accelerated.upload(params)
-      resolve(result)
-    } catch (e) {
-      // if acceleration settings are still not ready
-      // use the regular client
-      if (e.message.includes('Transfer Acceleration is not configured')) {
-        const result = await clients.s3.regular.upload(params)
-        resolve(result)
-      }
-      reject(e)
-    }
-  })
+  return callAcceleratedOrRegular(clients, 'upload', params)
 }
 
 const uploadDir = async (clients, bucketName, zipPath, instance) => {
