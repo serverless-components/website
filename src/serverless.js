@@ -89,9 +89,16 @@ class Website extends Component {
       log(`Updating CloudFront distribution of ID ${config.distributionId}.`)
       newDistribution = await updateCloudFrontDistribution(clients, config)
 
-      log(`Invalidating CloudFront cache for distribution ${config.distributionId}.`)
-      await invalidateCloudfrontDistribution(clients, config)
-    } else {
+      if (newDistribution) {
+        log(`Invalidating CloudFront cache for distribution ${config.distributionId}.`)
+        await invalidateCloudfrontDistribution(clients, config)
+      } else {
+        log(`Distribution with ID ${config.distributionId} is no longer available. Updating state.`)
+        delete config.distributionId
+      }
+    }
+
+    if (!config.distributionId) {
       log(`Creating CloudFront distribution in the ${config.region} region.`)
       newDistribution = await createCloudFrontDistribution(clients, config)
     }

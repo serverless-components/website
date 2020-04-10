@@ -595,50 +595,51 @@ const createCloudFrontDistribution = async (clients, config) => {
 }
 
 const updateCloudFrontDistribution = async (clients, config) => {
-  // Update logic is a bit weird...
-  // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CloudFront.html#updateDistribution-property
-
-  // 1. we gotta get the config first...
-  // todo what if id does not exist?
-  const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
-
-  // 2. then add this property
-  params.IfMatch = params.ETag
-
-  // 3. then delete this property
-  delete params.ETag
-
-  // 4. then set this property
-  params.Id = config.distributionId
-
-  // 5. then make our changes
-  params.DistributionConfig.Comment = config.distributionDescription
-
-  // add domain and certificate config if certificate is valid and ISSUED
-  if (config.certificateValid) {
-    log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
-    params.DistributionConfig.ViewerCertificate = {
-      ACMCertificateArn: config.certificateArn,
-      SSLSupportMethod: 'sni-only',
-      MinimumProtocolVersion: 'TLSv1.1_2016',
-      Certificate: config.certificateArn,
-      CertificateSource: 'acm'
-    }
-
-    log(`Adding domain "${config.domain}" to CloudFront distribution`)
-    params.DistributionConfig.Aliases = {
-      Quantity: 1,
-      Items: [config.domain]
-    }
-
-    if (shouldConfigureNakedDomain(config.domain)) {
-      log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
-      params.DistributionConfig.Aliases.Quantity = 2
-      params.DistributionConfig.Aliases.Items.push(config.nakedDomain)
-    }
-  }
-
   try {
+    // Update logic is a bit weird...
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CloudFront.html#updateDistribution-property
+
+    // 1. we gotta get the config first...
+    // todo what if id does not exist?
+    const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
+
+    // 2. then add this property
+    params.IfMatch = params.ETag
+
+    // 3. then delete this property
+    delete params.ETag
+
+    // 4. then set this property
+    params.Id = config.distributionId
+
+    // 5. then make our changes
+    params.DistributionConfig.Enabled = true // make sure it's enabled
+
+    params.DistributionConfig.Comment = config.distributionDescription
+
+    // add domain and certificate config if certificate is valid and ISSUED
+    if (config.certificateValid) {
+      log(`Adding "${config.nakedDomain}" certificate to CloudFront distribution`)
+      params.DistributionConfig.ViewerCertificate = {
+        ACMCertificateArn: config.certificateArn,
+        SSLSupportMethod: 'sni-only',
+        MinimumProtocolVersion: 'TLSv1.1_2016',
+        Certificate: config.certificateArn,
+        CertificateSource: 'acm'
+      }
+
+      log(`Adding domain "${config.domain}" to CloudFront distribution`)
+      params.DistributionConfig.Aliases = {
+        Quantity: 1,
+        Items: [config.domain]
+      }
+
+      if (shouldConfigureNakedDomain(config.domain)) {
+        log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
+        params.DistributionConfig.Aliases.Quantity = 2
+        params.DistributionConfig.Aliases.Items.push(config.nakedDomain)
+      }
+    }
     // 6. then finally update!
     const res = await clients.cf.updateDistribution(params).promise()
 
@@ -651,11 +652,16 @@ const updateCloudFrontDistribution = async (clients, config) => {
       distributionDescription: config.distributionDescription
     }
   } catch (e) {
+    if (e.code === 'NoSuchDistribution') {
+      return null
+    }
+
     if (e.message.includes('One or more of the CNAMEs')) {
       throw new Error(
         `The domain "${config.domain}" is already in use by another website or CloudFront Distribution.`
       )
     }
+
     throw e
   }
 }
@@ -742,6 +748,8 @@ const deleteCloudFrontDistribution = async (clients, distributionId) => {
   } catch (e) {
     if (e.code === 'DistributionNotDisabled') {
       await disableCloudFrontDistribution(clients, distributionId)
+    } else if (e.code === 'NoSuchDistribution') {
+      return
     } else {
       throw e
     }
@@ -749,33 +757,39 @@ const deleteCloudFrontDistribution = async (clients, distributionId) => {
 }
 
 const removeDomainFromCloudFrontDistribution = async (clients, config) => {
-  const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
+  try {
+    const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
 
-  params.IfMatch = params.ETag
+    params.IfMatch = params.ETag
 
-  delete params.ETag
+    delete params.ETag
 
-  params.Id = config.distributionId
+    params.Id = config.distributionId
 
-  params.DistributionConfig.Aliases = {
-    Quantity: 0,
-    Items: []
-  }
+    params.DistributionConfig.Aliases = {
+      Quantity: 0,
+      Items: []
+    }
 
-  params.DistributionConfig.ViewerCertificate = {
-    SSLSupportMethod: 'sni-only',
-    MinimumProtocolVersion: 'TLSv1.1_2016'
-  }
+    params.DistributionConfig.ViewerCertificate = {
+      SSLSupportMethod: 'sni-only',
+      MinimumProtocolVersion: 'TLSv1.1_2016'
+    }
+    const res = await clients.cf.updateDistribution(params).promise()
 
-  const res = await clients.cf.updateDistribution(params).promise()
-
-  return {
-    distributionId: res.Distribution.Id,
-    distributionArn: res.Distribution.ARN,
-    distributionUrl: res.Distribution.DomainName,
-    distributionOrigins: config.distributionOrigins,
-    distributionDefaults: config.distributionDefaults,
-    distributionDescription: config.distributionDescription
+    return {
+      distributionId: res.Distribution.Id,
+      distributionArn: res.Distribution.ARN,
+      distributionUrl: res.Distribution.DomainName,
+      distributionOrigins: config.distributionOrigins,
+      distributionDefaults: config.distributionDefaults,
+      distributionDescription: config.distributionDescription
+    }
+  } catch (e) {
+    if (e.code === 'NoSuchDistribution') {
+      return null
+    }
+    throw e
   }
 }
 
