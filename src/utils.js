@@ -156,17 +156,27 @@ const ensureBucket = async (clients, bucketName, instance) => {
   }
 }
 
-const upload = async (clients, params) => {
-  try {
-    return clients.s3.accelerated.upload(params).promise()
-  } catch (e) {
-    // if acceleration settings are still not ready
-    // use the regular client
-    if (e.message.includes('Transfer Acceleration is not configured')) {
-      return clients.s3.regular.upload(params).promise()
+// Attempts to call S3 method with "accelerated" and falls back
+// onto "regular", if bucket is not accelerated.
+const callAcceleratedOrRegular = async (clients, method, params) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const result = await clients.s3.accelerated[method](params).promise()
+      resolve(result)
+    } catch (e) {
+      // if acceleration settings are still not ready
+      // use the regular client
+      if (e.message.includes('Transfer Acceleration is not configured')) {
+        const result = await clients.s3.regular[method](params).promise()
+        resolve(result)
+      }
+      reject(e)
     }
-    throw e
-  }
+  })
+}
+
+const upload = async (clients, params) => {
+  return callAcceleratedOrRegular(clients, 'upload', params)
 }
 
 const uploadDir = async (clients, bucketName, zipPath, instance) => {
@@ -280,14 +290,14 @@ const configureBucketForHosting = async (clients, bucketName) => {
 
 const clearBucket = async (clients, bucketName) => {
   try {
-    const data = await clients.s3.accelerated.listObjects({ Bucket: bucketName }).promise()
+    const data = await callAcceleratedOrRegular(clients, 'listObjects', { Bucket: bucketName })
 
     const items = data.Contents
     const promises = []
 
     for (var i = 0; i < items.length; i += 1) {
       var deleteParams = { Bucket: bucketName, Key: items[i].Key }
-      const delObj = clients.s3.accelerated.deleteObject(deleteParams).promise()
+      const delObj = callAcceleratedOrRegular(clients, 'deleteObject', deleteParams)
       promises.push(delObj)
     }
 
