@@ -98,12 +98,12 @@ const getConfig = (inputs, state) => {
   return config
 }
 
-const accelerateBucket = async (clients, bucketName, accelerated) => {
+const accelerateBucket = async (clients, bucketName) => {
   try {
     await clients.s3.regular
       .putBucketAccelerateConfiguration({
         AccelerateConfiguration: {
-          Status: accelerated ? 'Enabled' : 'Suspended'
+          Status: 'Enabled'
         },
         Bucket: bucketName
       })
@@ -115,7 +115,7 @@ const accelerateBucket = async (clients, bucketName, accelerated) => {
   } catch (e) {
     if (e.code === 'NoSuchBucket') {
       await sleep(2000)
-      return accelerateBucket(clients, bucketName, accelerated)
+      return accelerateBucket(clients, bucketName)
     }
     throw e
   }
@@ -146,8 +146,12 @@ const ensureBucket = async (clients, bucketName, instance) => {
       // https://github.com/serverless/components/issues/428
       log(`Bucket ${bucketName} created. Confirming it's ready...`)
       await bucketCreation(clients, bucketName)
-      log(`Bucket ${bucketName} creation confirmed. Accelerating...`)
-      await accelerateBucket(clients, bucketName, true)
+
+      // only accelerate if bucketName does not contain dots due to DNS limits
+      if (!bucketName.includes('.')) {
+        log(`Bucket ${bucketName} creation confirmed. Accelerating...`)
+        await accelerateBucket(clients, bucketName)
+      }
     } else if (e.code === 'Forbidden' && e.message === null) {
       throw Error(`Forbidden: Invalid credentials or this AWS S3 bucket name may already be taken`)
     } else if (e.code === 'Forbidden') {
@@ -168,7 +172,10 @@ const callAcceleratedOrRegular = async (clients, method, params) => {
     } catch (e) {
       // if acceleration settings are still not ready
       // use the regular client
-      if (e.message.includes('Transfer Acceleration is not configured')) {
+      if (
+        e.message.includes('Transfer Acceleration is not configured') ||
+        e.message.includes('Inaccessible host: `s3-accelerate.amazonaws.com')
+      ) {
         const result = await clients.s3.regular[method](params).promise()
         resolve(result)
       }
