@@ -70,6 +70,8 @@ const shouldConfigureNakedDomain = (domain) => {
 
 const getConfig = (inputs, state) => {
   const config = {}
+  config.indexDocument = inputs.indexDocument || 'index.html'
+  config.errorDocument = inputs.errorDocument || 'index.html'
   config.bucketName = inputs.bucketName || state.bucketName || `website-${generateId()}`
   config.region = inputs.region || state.region || 'us-east-1'
   config.bucketUrl = `http://${config.bucketName}.s3-website-${config.region}.amazonaws.com`
@@ -221,7 +223,7 @@ const uploadDir = async (clients, bucketName, zipPath, instance) => {
   await Promise.all(uploadItems)
 }
 
-const configureBucketForHosting = async (clients, bucketName) => {
+const configureBucketForHosting = async (clients, bucketName, indexDocument, errorDocument) => {
   const s3BucketPolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -240,10 +242,10 @@ const configureBucketForHosting = async (clients, bucketName) => {
     Bucket: bucketName,
     WebsiteConfiguration: {
       ErrorDocument: {
-        Key: 'index.html'
+        Key: errorDocument
       },
       IndexDocument: {
-        Suffix: 'index.html'
+        Suffix: indexDocument
       }
     }
   }
