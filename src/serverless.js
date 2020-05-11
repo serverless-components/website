@@ -28,7 +28,7 @@ class Website extends Component {
     // Throw error on name change
     if (this.state.bucketName && this.state.bucketName !== config.bucketName) {
       throw new Error(
-        `Changing the bucket name from ${this.state.bucketName} to ${inputs.config} will remove your infrastructure.  Please remove it manually, change the bucket name, then re-deploy.`
+        `Changing the bucket name from ${this.state.bucketName} to ${inputs.bucketName} will remove your infrastructure.  Please remove it manually, change the bucket name, then re-deploy.`
       )
     }
 
@@ -73,7 +73,12 @@ class Website extends Component {
       log(`Configuring bucket for hosting`)
       log(`Uploading Website files`)
       await Promise.all([
-        configureBucketForHosting(clients, config.bucketName, config.indexDocument, config.errorDocument),
+        configureBucketForHosting(
+          clients,
+          config.bucketName,
+          config.indexDocument,
+          config.errorDocument
+        ),
         uploadDir(clients, config.bucketName, config.src, this)
       ])
 
