@@ -118,6 +118,17 @@ inputs:
   errorDocument: index.html      # (optional) error document for your website. default is index.html.
 ```
 
+You could also provide a build hook to run before the source gets uploaded by turning the `src` input into an object:
+
+```yml
+
+inputs:
+  src:
+    src: ./src          # the input source folder
+    hook: npm run build # the hook you want to run
+    dist: ./dist        # the output dist folder
+```
+
 Once you've chosen your configuration, run `serverless deploy` again (or simply just `serverless`) to deploy your changes.
 
 ### Dev Mode
