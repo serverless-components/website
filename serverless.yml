@@ -1,0 +1,8 @@
+name: website
+version: 1.0.2
+org: serverlessinc
+description: Deploys Serverless Websites
+keywords: aws, serverless, website
+repo: https://github.com/serverless-components/website
+license: MIT
+src: ./src

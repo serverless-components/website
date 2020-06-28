@@ -13,6 +13,7 @@
   "license": "Apache",
   "dependencies": {
     "klaw-sync": "^6.0.0",
-    "mime-types": "^2.1.22"
+    "mime-types": "^2.1.22",
+    "parse-domain": "^3.0.2"
   }
 }

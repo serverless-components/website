@@ -4,6 +4,7 @@ const path = require('path')
 const klawSync = require('klaw-sync')
 const mime = require('mime-types')
 const https = require('https')
+const { parseDomain } = require('parse-domain')
 const agent = new https.Agent({
   keepAlive: true
 })
@@ -52,17 +53,16 @@ const getClients = (credentials, region) => {
 }
 
 const getNakedDomain = (domain) => {
-  const domainParts = domain.split('.')
-  const topLevelDomainPart = domainParts[domainParts.length - 1]
-  const secondLevelDomainPart = domainParts[domainParts.length - 2]
-  return `${secondLevelDomainPart}.${topLevelDomainPart}`
+  const parsedDomain = parseDomain(domain)
+  const nakedDomain = `${parsedDomain.domain}.${parsedDomain.topLevelDomains.join('.')}`
+  return nakedDomain
 }
 
 const shouldConfigureNakedDomain = (domain) => {
   if (!domain) {
     return false
   }
-  if (domain.startsWith('www') && domain.split('.').length === 3) {
+  if (domain.startsWith('www')) {
     return true
   }
   return false
@@ -85,9 +85,12 @@ const getConfig = (inputs, state) => {
     inputs.distributionDescription || `Website distribution for bucket ${config.bucketName}`
   config.distributionDefaults = inputs.distributionDefaults
 
+  // in case user specified protocol
   config.domain = inputs.domain
-  config.nakedDomain = inputs.domain ? getNakedDomain(inputs.domain) : null
-  config.domainHostedZoneId = inputs.domain ? state.domainHostedZoneId : null
+    ? inputs.domain.replace('https://', '').replace('http://', '')
+    : null
+  config.nakedDomain = config.domain ? getNakedDomain(config.domain) : null
+  config.domainHostedZoneId = config.domain ? state.domainHostedZoneId : null
   config.certificateArn = state.certificateArn
 
   // if user input example.com, make sure we also setup www.example.com
