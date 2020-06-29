@@ -94,7 +94,7 @@ const getConfig = (inputs, state) => {
   config.certificateArn = state.certificateArn
 
   // if user input example.com, make sure we also setup www.example.com
-  if (config.domain === config.nakedDomain) {
+  if (config.domain && config.domain === config.nakedDomain) {
     config.domain = `www.${config.domain}`
   }
 
