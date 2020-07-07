@@ -1,0 +1,13 @@
+name: vue-starter
+component: website
+org: serverlessinc
+description: Deploys a serverless Vue website on AWS
+keywords: aws, serverless, website, frontend, vue
+repo: https://github.com/serverless-components/website
+license: MIT
+
+inputs:
+  src:
+    src: ./src
+    hook: npm run build
+    dist: ./dist
