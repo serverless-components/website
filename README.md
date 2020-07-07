@@ -28,7 +28,7 @@ Check out the **[Serverless Fullstack Application](https://github.com/serverless
 <img src="/assets/deploy-demo.gif" height="250" align="right">
 
 * [**Install**](#install)
-* [**Create**](#create)
+* [**Initialize**](#init)
 * [**Deploy**](#deploy)
 * [**Configure**](#configure)
 * [**Dev Mode**](#dev-mode)
@@ -45,41 +45,30 @@ To get started with component, install the latest version of the Serverless Fram
 ```
 $ npm install -g serverless
 ```
-### Create
+### Initialize
 
-You can easily create a new website instance just by using the following command and template url.
+The easiest way to start using the website component is by initializing one of its templates using the `init` command:
+
+If you'd like to use **React**:
 
 ```
-$ serverless create --template-url https://github.com/serverless/components/tree/master/templates/website
-$ cd website
+serverless init react-starter
+cd react-starter
 ```
 
-Then, create a new `.env` file in the root of the `website` directory right next to `serverless.yml`, and add your AWS access keys:
+For you'd like to use **Vue**:
+
+```
+serverless init vue-starter
+cd vue starter
+``
+
+This will also run `npm install` for you, and create an empty `.env` file. Open that `.env` file and can add in your AWS credentials:
 
 ```
 # .env
 AWS_ACCESS_KEY_ID=XXX
 AWS_SECRET_ACCESS_KEY=XXX
-```
-
-You should now have a directory that looks something like this:
-
-```
-|- index.html
-|- package.json
-|- src
-|- serverless.yml
-|- .env
-```
-
-The source directory could either contain simple html files, or an entire built React/Vue app.
-
-### Build
-
-This template above requires running npm install and build in its root directory, to install the React framework and build it.
-
-```
-$ npm install && npm run build
 ```
 
 ### Deploy
