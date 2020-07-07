@@ -61,7 +61,7 @@ For you'd like to use **Vue**:
 ```
 serverless init vue-starter
 cd vue starter
-``
+```
 
 This will also run `npm install` for you, and create an empty `.env` file. Open that `.env` file and can add in your AWS credentials:
 
