@@ -1,0 +1,13 @@
+name: react-starter
+component: website
+org: serverlessinc
+description: Deploys a serverless react website on AWS
+keywords: aws, serverless, website, frontend, react
+repo: https://github.com/serverless-components/website
+license: MIT
+
+inputs:
+  src:
+    src: ./src
+    hook: npm run build
+    dist: ./dist
