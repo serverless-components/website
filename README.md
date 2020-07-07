@@ -49,14 +49,14 @@ $ npm install -g serverless
 
 The easiest way to start using the website component is by initializing one of its templates using the `init` command:
 
-If you'd like to use **React**:
+For **React**:
 
 ```
 serverless init react-starter
 cd react-starter
 ```
 
-For you'd like to use **Vue**:
+For **Vue**:
 
 ```
 serverless init vue-starter
