@@ -1,5 +1,5 @@
 name: website
-version: 1.0.3
+version: 1.0.4
 org: serverlessinc
 description: Deploys Serverless Websites
 keywords: aws, serverless, website

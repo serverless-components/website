@@ -54,6 +54,11 @@ const getClients = (credentials, region) => {
 
 const getNakedDomain = (domain) => {
   const parsedDomain = parseDomain(domain)
+
+  if (!parsedDomain.topLevelDomains) {
+    throw new Error(`"${domain}" is not a valid domain.`)
+  }
+
   const nakedDomain = `${parsedDomain.domain}.${parsedDomain.topLevelDomains.join('.')}`
   return nakedDomain
 }
