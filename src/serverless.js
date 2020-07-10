@@ -16,7 +16,10 @@ const {
   configureDnsForCloudFrontDistribution,
   removeDomainFromCloudFrontDistribution,
   removeCloudFrontDomainDnsRecords,
-  deleteCloudFrontDistribution
+  deleteCloudFrontDistribution,
+  createOrUpdateMetaRole,
+  removeAllRoles,
+  getMetrics,
 } = require('./utils')
 
 class Website extends Component {
@@ -45,6 +48,8 @@ class Website extends Component {
         `Changing the region from ${this.state.region} to ${config.region} will remove your infrastructure.  Please remove it manually, change the region, then re-deploy.`
       )
     }
+
+    await createOrUpdateMetaRole(this, inputs, clients, this.accountId);
 
     if (config.domain) {
       log(`Setting up domain ${config.domain}`)
@@ -137,7 +142,8 @@ class Website extends Component {
     const outputs = {
       bucket: this.state.bucketName,
       bucketUrl: `http://${this.state.bucketName}.s3-website.${this.state.region}.amazonaws.com`,
-      url: `https://${this.state.distributionUrl}`
+      distributionUrl: `https://${this.state.distributionUrl}`,
+      url: this.state.domain || `https://${this.state.distributionUrl}` // Always show custom domain first
     }
 
     if (config.domain) {
@@ -155,6 +161,8 @@ class Website extends Component {
     const config = this.state
 
     const clients = getClients(this.credentials.aws, this.state.region)
+
+    await removeAllRoles(this, clients);
 
     log(`Clearing bucket ${config.bucketName}`)
     await clearBucket(clients, config.bucketName)
@@ -186,6 +194,26 @@ class Website extends Component {
 
     log(`Website Removed`)
     return {}
+  }
+
+  /**
+   * Metrics
+   */
+  async metrics(inputs = {}) {
+    // Validate
+    if (!inputs.rangeStart || !inputs.rangeEnd) {
+      throw new Error('rangeStart and rangeEnd are require inputs');
+    }
+
+    const result = await getMetrics(
+      this.state.region,
+      this.state.metaRoleArn,
+      this.state.distributionId,
+      inputs.rangeStart,
+      inputs.rangeEnd
+    );
+
+    return result;
   }
 }
 

@@ -1,4 +1,4 @@
-const AWS = require('aws-sdk')
+const AWS = require('@serverless/aws-sdk-extra')
 const fs = require('fs')
 const path = require('path')
 const klawSync = require('klaw-sync')
@@ -45,6 +45,7 @@ const getClients = (credentials, region) => {
     },
     cf: new AWS.CloudFront(params),
     route53: new AWS.Route53(params),
+    extras: new AWS.Extras(params),
     acm: new AWS.ACM({
       credentials,
       region: 'us-east-1' // ACM must be in us-east-1
@@ -865,11 +866,141 @@ const removeCloudFrontDomainDnsRecords = async (clients, config) => {
   }
 }
 
+/*
+ * Ensure the Meta IAM Role exists
+ */
+const createOrUpdateMetaRole = async (instance, inputs, clients, serverlessAccountId) => {
+  // Create or update Meta Role for monitoring and more, if option is enabled.  It's enabled by default.
+  if (inputs.monitoring || typeof inputs.monitoring === 'undefined') {
+    console.log('Creating or updating the meta IAM Role...');
+
+    const roleName = `${instance.name}-meta-role`;
+
+    const assumeRolePolicyDocument = {
+      Version: '2012-10-17',
+      Statement: {
+        Effect: 'Allow',
+        Principal: {
+          AWS: `arn:aws:iam::${serverlessAccountId}:root`, // Serverless's Components account
+        },
+        Action: 'sts:AssumeRole',
+      },
+    };
+
+    // Create a policy that only can access APIGateway and Lambda metrics, logs from CloudWatch...
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Resource: '*',
+          Action: [
+            'cloudwatch:Describe*',
+            'cloudwatch:Get*',
+            'cloudwatch:List*',
+            'logs:Get*',
+            'logs:List*',
+            'logs:Describe*',
+            'logs:TestMetricFilter',
+            'logs:FilterLogEvents',
+          ],
+        },
+      ],
+    };
+
+    const roleDescription = `The Meta Role for the Serverless Framework App: ${instance.name} Stage: ${instance.stage}`;
+
+    const result = await clients.extras.deployRole({
+      roleName,
+      roleDescription,
+      policy,
+      assumeRolePolicyDocument,
+    });
+
+    instance.state.metaRoleName = roleName;
+    instance.state.metaRoleArn = result.roleArn;
+
+    console.log(`Meta IAM Role created or updated with ARN ${instance.state.metaRoleArn}`);
+  }
+};
+
+/*
+ * Removes the Function & Meta Roles from aws according to the provided config
+ *
+ * @param ${object} clients - an object containing aws sdk clients
+ * @param ${object} config - the component config
+ */
+const removeAllRoles = async (instance, clients) => {
+  // Delete Meta Role
+  if (instance.state.metaRoleName) {
+    console.log('Deleting the Meta Role...');
+    await clients.extras.removeRole({
+      roleName: instance.state.metaRoleName,
+    });
+  }
+};
+
+
+/**
+ * Get metrics from cloudwatch
+ * @param {*} clients
+ * @param {*} rangeStart MUST be a moment() object
+ * @param {*} rangeEnd MUST be a moment() object
+ */
+const getMetrics = async (
+  region,
+  metaRoleArn,
+  distributionId,
+  rangeStart,
+  rangeEnd
+) => {
+  /**
+   * Create AWS STS Token via the meta role that is deployed with the Express Component
+   */
+
+  // Assume Role
+  const assumeParams = {};
+  assumeParams.RoleSessionName = `session${Date.now()}`;
+  assumeParams.RoleArn = metaRoleArn;
+  assumeParams.DurationSeconds = 900;
+
+  const sts = new AWS.STS({ region })
+  const resAssume = await sts.assumeRole(assumeParams).promise();
+
+  const roleCreds = {};
+  roleCreds.accessKeyId = resAssume.Credentials.AccessKeyId;
+  roleCreds.secretAccessKey = resAssume.Credentials.SecretAccessKey;
+  roleCreds.sessionToken = resAssume.Credentials.SessionToken;
+
+  /**
+   * Instantiate a new Extras instance w/ the temporary credentials
+   */
+
+  const extras = new AWS.Extras({
+    credentials: roleCreds,
+    region,
+  })
+
+  const resources = [
+    {
+      type: 'aws_cloudfront',
+      distributionId,
+    },
+  ];
+
+  return await extras.getMetrics({
+    rangeStart,
+    rangeEnd,
+    resources,
+  });
+};
+
 module.exports = {
   log,
   generateId,
   getClients,
   getConfig,
+  createOrUpdateMetaRole,
   bucketCreation,
   accelerateBucket,
   ensureBucket,
@@ -885,5 +1016,7 @@ module.exports = {
   configureDnsForCloudFrontDistribution,
   deleteCloudFrontDistribution,
   removeDomainFromCloudFrontDistribution,
-  removeCloudFrontDomainDnsRecords
+  removeCloudFrontDomainDnsRecords,
+  removeAllRoles,
+  getMetrics,
 }
