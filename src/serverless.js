@@ -60,7 +60,11 @@ class Website extends Component {
         config.domainHostedZoneId = this.state.domainHostedZoneId
       }
 
-      this.state.certificateArn = await ensureCertificate(clients, config, this)
+      if(config.certificateArn){
+        this.state.certificateArn = config.certificateArn
+      }else{
+        this.state.certificateArn = await ensureCertificate(clients, config, this)
+      }
       await this.save()
       config.certificateArn = this.state.certificateArn
     }
