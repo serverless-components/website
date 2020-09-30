@@ -1,4 +1,4 @@
-[![Serverless Components](https://s3.amazonaws.com/public.assets.serverless.com/images/readme_serverless_website.gif)](http://serverless.com)
+[![Serverless Components](https://s3.amazonaws.com/public.assets.serverless.com/images/readme_serverless_website.gif)](http://serverless.com) -An Amazing Project
 
 <br/>
 
