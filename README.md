@@ -15,7 +15,7 @@
 - [x] **Zero Configuration** - Just let us know the component name, then just deploy.
 - [x] **Fast Deployments** - Deploy your entire website or frontend in seconds.
 - [x] **CDN, SSL & Custom Domains** - Comes with free CDN, SSL & custom domains out of the box.
-- [x] **Team Collaboration** - Collaborate with your teamates with shared state and outputs.
+- [x] **Team Collaboration** - Collaborate with your teammates with shared state and outputs.
 - [x] **Built-in Monitoring** - Monitor your website right from the Serverless Dashboard.
 
 <br/>
@@ -40,7 +40,7 @@ Check out the **[Serverless Fullstack Application](https://github.com/serverless
 
 ### Install
 
-To get started with component, install the latest version of the Serverless Framework:
+To get started with this component, install the latest version of the Serverless Framework:
 
 ```
 $ npm install -g serverless
