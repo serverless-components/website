@@ -105,6 +105,7 @@ inputs:
   bucketName: my-bucket          # (optional) aws bucket name. default is an auto generated name.
   indexDocument: index.html      # (optional) index document for your website. default is index.html.
   errorDocument: index.html      # (optional) error document for your website. default is index.html.
+  compress: false                # (optional) enables cloudfront automatic compression. default is false.
 ```
 
 You could also provide a build hook to run before the source gets uploaded by turning the `src` input into an object:

@@ -82,6 +82,7 @@ const getConfig = (inputs, state) => {
   config.region = inputs.region || state.region || 'us-east-1'
   config.bucketUrl = `http://${config.bucketName}.s3-website-${config.region}.amazonaws.com`
   config.src = inputs.src
+  config.compress = inputs.compress || false
 
   config.distributionId = state.distributionId
   config.distributionUrl = state.distributionUrl
@@ -560,7 +561,7 @@ const createCloudFrontDistribution = async (clients, config) => {
         SmoothStreaming: false,
         DefaultTTL: 0,
         MaxTTL: 31536000,
-        Compress: false,
+        Compress: config.compress,
         LambdaFunctionAssociations: {
           Quantity: 0,
           Items: []
