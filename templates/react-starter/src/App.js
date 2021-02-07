@@ -1,58 +1,32 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import imageHero from './images/hero.png';
 
-export default class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-    this.state.loading = false;
-    this.state.votes = 0;
-    this.saveVote = this.saveVote.bind(this);
-  }
+const App = () => {
+  const [votes, setVotes] = useState(0);
 
-  /**
-   * Component Did Mount
-   */
+  return (
+    <div className="container">
+      <div className="hero">
+        <img src={imageHero} />
+      </div>
 
-  async componentDidMount() {}
+      <div className="tagline">
+        a website built on serverless components via the serverless framework
+      </div>
 
-  /**
-   * Save Vote
-   */
-
-  async saveVote() {
-    this.setState({ votes: this.state.votes + 1 });
-  }
-
-  /**
-   * Render
-   */
-
-  render() {
-    return (
-      <div className="container">
-        <div className="hero">
-          <img src={imageHero} />
-        </div>
-
-        <div className="tagline">
-          a website built on serverless components via the serverless framework
-        </div>
-
-        <div className="buttonContainer">
-          <div
-            className={`button`}
-            onClick={() => {
-              this.saveVote();
-            }}
-          >
-            <div className={`buttonInner`}>
-              <div className={`buttonLeft`}>ß</div>
-              <div className="buttonRight">{this.state.votes}</div>
-            </div>
+      <div className="buttonContainer">
+        <div
+          className={`button`}
+          onClick={() => { setVotes(votes + 1) }}
+        >
+          <div className={`buttonInner`}>
+            <div className={`buttonLeft`}>ß</div>
+            <div className="buttonRight">{votes}</div>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
+
+export default App;
