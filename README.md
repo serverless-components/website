@@ -46,7 +46,7 @@ To get started with component, install the latest version of the Serverless Fram
 $ npm install -g serverless
 ```
 
-After installation, make sure you connect your AWS account on the [Serverless Dashboard](https://app.serverless.com)
+After installation, make sure you connect your AWS account by setting a provider in the org setting page on the [Serverless Dashboard](https://app.serverless.com)
 
 ### Initialize
 
