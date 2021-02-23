@@ -19,7 +19,7 @@ const {
   deleteCloudFrontDistribution,
   createOrUpdateMetaRole,
   removeAllRoles,
-  getMetrics,
+  getMetrics
 } = require('./utils')
 
 class Website extends Component {
@@ -49,7 +49,7 @@ class Website extends Component {
       )
     }
 
-    await createOrUpdateMetaRole(this, inputs, clients, this.accountId);
+    await createOrUpdateMetaRole(this, inputs, clients, this.accountId)
 
     if (config.domain) {
       log(`Setting up domain ${config.domain}`)
@@ -162,7 +162,7 @@ class Website extends Component {
 
     const clients = getClients(this.credentials.aws, this.state.region)
 
-    await removeAllRoles(this, clients);
+    await removeAllRoles(this, clients)
 
     log(`Clearing bucket ${config.bucketName}`)
     await clearBucket(clients, config.bucketName)
@@ -202,7 +202,7 @@ class Website extends Component {
   async metrics(inputs = {}) {
     // Validate
     if (!inputs.rangeStart || !inputs.rangeEnd) {
-      throw new Error('rangeStart and rangeEnd are require inputs');
+      throw new Error('rangeStart and rangeEnd are require inputs')
     }
 
     const result = await getMetrics(
@@ -211,9 +211,9 @@ class Website extends Component {
       this.state.distributionId,
       inputs.rangeStart,
       inputs.rangeEnd
-    );
+    )
 
-    return result;
+    return result
   }
 }
 
