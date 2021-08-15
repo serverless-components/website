@@ -16,7 +16,7 @@ node_modules
 dist
 .idea
 build/
-.env*
+.env
 env.js
 package-lock.json
 test

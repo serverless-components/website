@@ -7,8 +7,8 @@ jest.setTimeout(30000)
 
 // the yaml file we're testing against
 const instanceYaml = {
-  org: 'serverlessinc',
-  app: 'myApp',
+  org: process.env.ORG_NAME || 'serverlessinc',
+  app: 'myapp',
   component: 'website@dev',
   name: `website-integration-tests-${generateId()}`,
   stage: 'dev',
@@ -26,10 +26,10 @@ const sdk = getServerlessSdk(instanceYaml.org)
 
 // clean up the instance after tests
 afterAll(async () => {
-  await sdk.remove(instanceYaml, credentials)
+  // await sdk.remove(instanceYaml, credentials)
 })
 
-it('should successfully deploy website', async () => {
+it.only('should successfully deploy website', async () => {
   const instance = await sdk.deploy(instanceYaml, credentials)
 
   // store the inital state for removal validation later on

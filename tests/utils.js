@@ -1,4 +1,3 @@
-const path = require('path')
 const { ServerlessSDK } = require('@serverless/platform-client')
 require('dotenv').config()
 
@@ -22,7 +21,7 @@ const generateId = () =>
 const getCredentials = () => {
   const credentials = {
     aws: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID ,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     }
   }

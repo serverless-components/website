@@ -41,7 +41,10 @@ const getClients = (credentials, region) => {
       // we need two S3 clients because creating/deleting buckets
       // is not available with the acceleration feature.
       regular: new AWS.S3(params),
-      accelerated: new AWS.S3({ ...params, endpoint: `s3-accelerate.amazonaws.com` })
+      accelerated: new AWS.S3({
+        ...params,
+        endpoint: `s3-accelerate.amazonaws.com`
+      })
     },
     cf: new AWS.CloudFront(params),
     route53: new AWS.Route53(params),
@@ -82,6 +85,7 @@ const getConfig = (inputs, state) => {
   config.region = inputs.region || state.region || 'us-east-1'
   config.bucketUrl = `http://${config.bucketName}.s3-website-${config.region}.amazonaws.com`
   config.src = inputs.src
+  config.cache = inputs.cache || true
 
   config.distributionId = state.distributionId
   config.distributionUrl = state.distributionUrl
@@ -132,7 +136,11 @@ const accelerateBucket = async (clients, bucketName) => {
 
 const bucketCreation = async (clients, Bucket) => {
   try {
-    await clients.s3.regular.headBucket({ Bucket }).promise()
+    await clients.s3.regular
+      .headBucket({
+        Bucket
+      })
+      .promise()
   } catch (e) {
     if (e.code === 'NotFound' || e.code === 'NoSuchBucket') {
       await sleep(2000)
@@ -142,14 +150,22 @@ const bucketCreation = async (clients, Bucket) => {
   }
 }
 
-const ensureBucket = async (clients, bucketName, instance) => {
+const ensureBucket = async (clients, bucketName) => {
   try {
     log(`Checking if bucket ${bucketName} exists.`)
-    await clients.s3.regular.headBucket({ Bucket: bucketName }).promise()
+    await clients.s3.regular
+      .headBucket({
+        Bucket: bucketName
+      })
+      .promise()
   } catch (e) {
     if (e.code === 'NotFound') {
       log(`Bucket ${bucketName} does not exist. Creating...`)
-      await clients.s3.regular.createBucket({ Bucket: bucketName }).promise()
+      await clients.s3.regular
+        .createBucket({
+          Bucket: bucketName
+        })
+        .promise()
       // there's a race condition when using acceleration
       // so we need to sleep for a couple seconds. See this issue:
       // https://github.com/serverless/components/issues/428
@@ -308,13 +324,18 @@ const configureBucketForHosting = async (clients, bucketName, indexDocument, err
 
 const clearBucket = async (clients, bucketName) => {
   try {
-    const data = await callAcceleratedOrRegular(clients, 'listObjects', { Bucket: bucketName })
+    const data = await callAcceleratedOrRegular(clients, 'listObjects', {
+      Bucket: bucketName
+    })
 
     const items = data.Contents
     const promises = []
 
     for (var i = 0; i < items.length; i += 1) {
-      var deleteParams = { Bucket: bucketName, Key: items[i].Key }
+      var deleteParams = {
+        Bucket: bucketName,
+        Key: items[i].Key
+      }
       const delObj = callAcceleratedOrRegular(clients, 'deleteObject', deleteParams)
       promises.push(delObj)
     }
@@ -329,7 +350,11 @@ const clearBucket = async (clients, bucketName) => {
 
 const deleteBucket = async (clients, bucketName) => {
   try {
-    await clients.s3.regular.deleteBucket({ Bucket: bucketName }).promise()
+    await clients.s3.regular
+      .deleteBucket({
+        Bucket: bucketName
+      })
+      .promise()
   } catch (error) {
     if (error.code !== 'NoSuchBucket') {
       throw error
@@ -373,7 +398,11 @@ const getCertificateValidationRecord = (certificate, domain) => {
 }
 
 const describeCertificateByArn = async (clients, certificateArn, domain) => {
-  const res = await clients.acm.describeCertificate({ CertificateArn: certificateArn }).promise()
+  const res = await clients.acm
+    .describeCertificate({
+      CertificateArn: certificateArn
+    })
+    .promise()
   const certificate = res && res.Certificate ? res.Certificate : null
 
   if (
@@ -387,7 +416,7 @@ const describeCertificateByArn = async (clients, certificateArn, domain) => {
   return certificate
 }
 
-const ensureCertificate = async (clients, config, instance) => {
+const ensureCertificate = async (clients, config) => {
   const wildcardSubDomain = `*.${config.nakedDomain}`
 
   const params = {
@@ -558,7 +587,8 @@ const createCloudFrontDistribution = async (clients, config) => {
           }
         },
         SmoothStreaming: false,
-        DefaultTTL: 0,
+        DefaultTTL: config.cache ? 86400 : 0,
+        MinTTL: 0,
         MaxTTL: 31536000,
         Compress: false,
         LambdaFunctionAssociations: {
@@ -629,7 +659,11 @@ const updateCloudFrontDistribution = async (clients, config) => {
 
     // 1. we gotta get the config first...
     // todo what if id does not exist?
-    const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
+    const params = await clients.cf
+      .getDistributionConfig({
+        Id: config.distributionId
+      })
+      .promise()
 
     // 2. then add this property
     params.IfMatch = params.ETag
@@ -748,7 +782,11 @@ const configureDnsForCloudFrontDistribution = async (clients, config) => {
 }
 
 const disableCloudFrontDistribution = async (clients, distributionId) => {
-  const params = await clients.cf.getDistributionConfig({ Id: distributionId }).promise()
+  const params = await clients.cf
+    .getDistributionConfig({
+      Id: distributionId
+    })
+    .promise()
 
   params.IfMatch = params.ETag
 
@@ -769,9 +807,16 @@ const disableCloudFrontDistribution = async (clients, distributionId) => {
 
 const deleteCloudFrontDistribution = async (clients, distributionId) => {
   try {
-    const res = await clients.cf.getDistributionConfig({ Id: distributionId }).promise()
+    const res = await clients.cf
+      .getDistributionConfig({
+        Id: distributionId
+      })
+      .promise()
 
-    const params = { Id: distributionId, IfMatch: res.ETag }
+    const params = {
+      Id: distributionId,
+      IfMatch: res.ETag
+    }
     await clients.cf.deleteDistribution(params).promise()
   } catch (e) {
     if (e.code === 'DistributionNotDisabled') {
@@ -786,7 +831,11 @@ const deleteCloudFrontDistribution = async (clients, distributionId) => {
 
 const removeDomainFromCloudFrontDistribution = async (clients, config) => {
   try {
-    const params = await clients.cf.getDistributionConfig({ Id: config.distributionId }).promise()
+    const params = await clients.cf
+      .getDistributionConfig({
+        Id: config.distributionId
+      })
+      .promise()
 
     params.IfMatch = params.ETag
 
@@ -872,20 +921,20 @@ const removeCloudFrontDomainDnsRecords = async (clients, config) => {
 const createOrUpdateMetaRole = async (instance, inputs, clients, serverlessAccountId) => {
   // Create or update Meta Role for monitoring and more, if option is enabled.  It's enabled by default.
   if (inputs.monitoring || typeof inputs.monitoring === 'undefined') {
-    console.log('Creating or updating the meta IAM Role...');
+    log('Creating or updating the meta IAM Role...')
 
-    const roleName = `${instance.name}-meta-role`;
+    const roleName = `${instance.name}-meta-role`
 
     const assumeRolePolicyDocument = {
       Version: '2012-10-17',
       Statement: {
         Effect: 'Allow',
         Principal: {
-          AWS: `arn:aws:iam::${serverlessAccountId}:root`, // Serverless's Components account
+          AWS: `arn:aws:iam::${serverlessAccountId}:root` // Serverless's Components account
         },
-        Action: 'sts:AssumeRole',
-      },
-    };
+        Action: 'sts:AssumeRole'
+      }
+    }
 
     // Create a policy that only can access APIGateway and Lambda metrics, logs from CloudWatch...
     const policy = {
@@ -902,27 +951,27 @@ const createOrUpdateMetaRole = async (instance, inputs, clients, serverlessAccou
             'logs:List*',
             'logs:Describe*',
             'logs:TestMetricFilter',
-            'logs:FilterLogEvents',
-          ],
-        },
-      ],
-    };
+            'logs:FilterLogEvents'
+          ]
+        }
+      ]
+    }
 
-    const roleDescription = `The Meta Role for the Serverless Framework App: ${instance.name} Stage: ${instance.stage}`;
+    const roleDescription = `The Meta Role for the Serverless Framework App: ${instance.name} Stage: ${instance.stage}`
 
     const result = await clients.extras.deployRole({
       roleName,
       roleDescription,
       policy,
-      assumeRolePolicyDocument,
-    });
+      assumeRolePolicyDocument
+    })
 
-    instance.state.metaRoleName = roleName;
-    instance.state.metaRoleArn = result.roleArn;
+    instance.state.metaRoleName = roleName
+    instance.state.metaRoleArn = result.roleArn
 
-    console.log(`Meta IAM Role created or updated with ARN ${instance.state.metaRoleArn}`);
+    log(`Meta IAM Role created or updated with ARN ${instance.state.metaRoleArn}`)
   }
-};
+}
 
 /*
  * Removes the Function & Meta Roles from aws according to the provided config
@@ -933,13 +982,12 @@ const createOrUpdateMetaRole = async (instance, inputs, clients, serverlessAccou
 const removeAllRoles = async (instance, clients) => {
   // Delete Meta Role
   if (instance.state.metaRoleName) {
-    console.log('Deleting the Meta Role...');
+    log('Deleting the Meta Role...')
     await clients.extras.removeRole({
-      roleName: instance.state.metaRoleName,
-    });
+      roleName: instance.state.metaRoleName
+    })
   }
-};
-
+}
 
 /**
  * Get metrics from cloudwatch
@@ -947,30 +995,26 @@ const removeAllRoles = async (instance, clients) => {
  * @param {*} rangeStart MUST be a moment() object
  * @param {*} rangeEnd MUST be a moment() object
  */
-const getMetrics = async (
-  region,
-  metaRoleArn,
-  distributionId,
-  rangeStart,
-  rangeEnd
-) => {
+const getMetrics = async (region, metaRoleArn, distributionId, rangeStart, rangeEnd) => {
   /**
    * Create AWS STS Token via the meta role that is deployed with the Express Component
    */
 
   // Assume Role
-  const assumeParams = {};
-  assumeParams.RoleSessionName = `session${Date.now()}`;
-  assumeParams.RoleArn = metaRoleArn;
-  assumeParams.DurationSeconds = 900;
+  const assumeParams = {}
+  assumeParams.RoleSessionName = `session${Date.now()}`
+  assumeParams.RoleArn = metaRoleArn
+  assumeParams.DurationSeconds = 900
 
-  const sts = new AWS.STS({ region })
-  const resAssume = await sts.assumeRole(assumeParams).promise();
+  const sts = new AWS.STS({
+    region
+  })
+  const resAssume = await sts.assumeRole(assumeParams).promise()
 
-  const roleCreds = {};
-  roleCreds.accessKeyId = resAssume.Credentials.AccessKeyId;
-  roleCreds.secretAccessKey = resAssume.Credentials.SecretAccessKey;
-  roleCreds.sessionToken = resAssume.Credentials.SessionToken;
+  const roleCreds = {}
+  roleCreds.accessKeyId = resAssume.Credentials.AccessKeyId
+  roleCreds.secretAccessKey = resAssume.Credentials.SecretAccessKey
+  roleCreds.sessionToken = resAssume.Credentials.SessionToken
 
   /**
    * Instantiate a new Extras instance w/ the temporary credentials
@@ -978,22 +1022,22 @@ const getMetrics = async (
 
   const extras = new AWS.Extras({
     credentials: roleCreds,
-    region,
+    region
   })
 
   const resources = [
     {
       type: 'aws_cloudfront',
-      distributionId,
-    },
-  ];
+      distributionId
+    }
+  ]
 
   return await extras.getMetrics({
     rangeStart,
     rangeEnd,
-    resources,
-  });
-};
+    resources
+  })
+}
 
 module.exports = {
   log,
@@ -1018,5 +1062,5 @@ module.exports = {
   removeDomainFromCloudFrontDistribution,
   removeCloudFrontDomainDnsRecords,
   removeAllRoles,
-  getMetrics,
+  getMetrics
 }
