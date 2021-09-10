@@ -1,0 +1,6 @@
+name: angular-starter
+org: serverlessinc
+description: Deploys a serverless Angular website on AWS
+keywords: aws, serverless, website, frontend, vue
+repo: https://github.com/serverless-components/website
+license: MIT

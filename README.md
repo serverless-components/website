@@ -66,6 +66,13 @@ serverless init vue-starter
 cd vue starter
 ```
 
+For **Angular**:
+
+```
+serverless init angular-starter
+cd angular-starter
+```
+
 This will also run `npm install` for you.
 
 ### Deploy
