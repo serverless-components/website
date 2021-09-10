@@ -1,0 +1,9 @@
+name: angular-starter
+component: website
+org: serverlessinc
+
+inputs:
+  src:
+    src: ./src
+    hook: npm run build
+    dist: ./dist/angular-starter
