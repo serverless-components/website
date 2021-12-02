@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "main": "./serverless.js",
   "publishConfig": {
-    "access": "public"
+    "access": "restricted"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --fix --cache"
   },
   "author": "Serverless, Inc.",
-  "license": "Apache",
+  "license": "Apache-2.0",
   "dependencies": {
     "@serverless/aws-sdk-extra": "^0.1.0",
     "klaw-sync": "^6.0.0",

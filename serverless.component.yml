@@ -1,9 +1,8 @@
-name: website
+name: website-naked-wo
 version: 1.1.2
-org: serverlessinc
+org: upequity
 description: Deploys Serverless Websites
 keywords: aws, serverless, website
-repo: https://github.com/serverless-components/website
 license: MIT
 src: ./src
 types:

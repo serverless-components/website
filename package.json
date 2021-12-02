@@ -1,20 +1,20 @@
 {
-  "name": "@serverless/website",
+  "name": "website-naked-wo",
   "version": "4.0.0",
   "main": "./serverless.js",
   "publishConfig": {
-    "access": "public"
+    "access": "restricted"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/serverless-components/website"
+    "url": "https://github.com/upequity/serverless-website"
   },
   "scripts": {
     "test": "jest ./tests/integration.test.js --testEnvironment node",
     "lint": "eslint . --fix --cache"
   },
   "author": "Serverless, Inc.",
-  "license": "Apache",
+  "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
     "@serverless/platform-client": "^0.24.0",
