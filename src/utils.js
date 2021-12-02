@@ -95,7 +95,7 @@ const getConfig = (inputs, state) => {
   config.domain = inputs.domain
     ? inputs.domain.replace('https://', '').replace('http://', '')
     : null
-  config.nakedDomain = config.domain ? getNakedDomain(config.domain) : null
+  config.nakedDomain = inputs.nakedDomain || (config.domain ? getNakedDomain(config.domain) : null)
   config.domainHostedZoneId = config.domain ? state.domainHostedZoneId : null
   config.certificateArn = state.certificateArn
 
