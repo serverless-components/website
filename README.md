@@ -98,6 +98,7 @@ stage: dev                       # (optional) serverless dashboard stage. defaul
 inputs:
   src: ./src                     # (optional) path to the source folder. default is a hello world html file.
   domain: serverless.com         # (optional) domain name. this could also be a subdomain.
+  alternateDomainNames: altDomainA.serverless.com,altDomainB.serverless.com         # (optional) alternate cloudfront domain names, separated by a comma.
   region: us-east-2              # (optional) aws region to deploy to. default is us-east-1.
   bucketName: my-bucket          # (optional) aws bucket name. default is an auto generated name.
   indexDocument: index.html      # (optional) index document for your website. default is index.html.
