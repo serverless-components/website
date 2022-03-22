@@ -150,6 +150,10 @@ class Website extends Component {
       outputs.domain = `https://${config.domain}`
     }
 
+    if (config.alternateDomainNames) {
+      outputs.alternateDomainNames = config.alternateDomainNames
+    }
+
     return outputs
   }
 
