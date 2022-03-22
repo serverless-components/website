@@ -1,9 +1,9 @@
-name: website
-version: 1.1.2
-org: serverlessinc
-description: Deploys Serverless Websites
+name: website-alternate-domains
+version: 1.0.1
+org: roodrallec
+description: Variation of Serverless Website Component for Alternate Cloudfront Domain Names
 keywords: aws, serverless, website
-repo: https://github.com/serverless-components/website
+repo: https://github.com/Syndi-Health/website
 license: MIT
 src: ./src
 types:

@@ -99,6 +99,9 @@ const getConfig = (inputs, state) => {
   config.domainHostedZoneId = config.domain ? state.domainHostedZoneId : null
   config.certificateArn = state.certificateArn
 
+  // for alternate cloudfront CNAME domains
+  config.alternateDomainNames = inputs.alternateDomainNames
+
   // if user input example.com, make sure we also setup www.example.com
   if (config.domain && config.domain === config.nakedDomain) {
     config.domain = `www.${config.domain}`
@@ -597,6 +600,13 @@ const createCloudFrontDistribution = async (clients, config) => {
       log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
       distributionConfig.Aliases.Quantity = 2
       distributionConfig.Aliases.Items.push(config.nakedDomain)
+    }
+
+    if (Array.isArray(config.alternateDomainNames)) {
+      config.alternateDomainNames.forEach((domain) => {
+        distributionConfig.Aliases.Quantity += 1
+        distributionConfig.Aliases.Items.push(domain)
+      })
     }
   }
 
