@@ -101,6 +101,8 @@ const getConfig = (inputs, state) => {
 
   // for alternate cloudfront CNAME domains
   config.alternateDomainNames = inputs.alternateDomainNames
+    ? inputs.alternateDomainNames.split(',')
+    : null
 
   // if user input example.com, make sure we also setup www.example.com
   if (config.domain && config.domain === config.nakedDomain) {
@@ -676,6 +678,13 @@ const updateCloudFrontDistribution = async (clients, config) => {
         log(`Adding domain "${config.nakedDomain}" to CloudFront distribution`)
         params.DistributionConfig.Aliases.Quantity = 2
         params.DistributionConfig.Aliases.Items.push(config.nakedDomain)
+      }
+
+      if (Array.isArray(config.alternateDomainNames)) {
+        config.alternateDomainNames.forEach((domain) => {
+          params.DistributionConfig.Aliases.Quantity += 1
+          params.DistributionConfig.Aliases.Items.push(domain)
+        })
       }
     }
     // 6. then finally update!

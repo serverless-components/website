@@ -1,5 +1,5 @@
 name: website-alternate-domains
-version: 1.0.1
+version: 1.0.3
 org: roodrallec
 description: Variation of Serverless Website Component for Alternate Cloudfront Domain Names
 keywords: aws, serverless, website
