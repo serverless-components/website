@@ -9,13 +9,13 @@ const {
   configureDomainForBucket,
   configureBucketForRedirect
 } = require('./utils')
+const regionUrls = require('./awsRegionUrls')
 
 /*
  * Website
  */
 
 class Website extends Component {
-
   /**
    * Types
    */
@@ -102,7 +102,7 @@ class Website extends Component {
 
     this.state.bucketName = inputs.bucketName
     this.state.region = inputs.region
-    this.state.url = `http://${bucketOutputs.name}.s3-website-${inputs.region}.amazonaws.com`
+    this.state.url = `http://${bucketOutputs.name}.${regionUrls[inputs.region]}`
     await this.save()
 
     const outputs = {
@@ -112,20 +112,37 @@ class Website extends Component {
 
     // Configure custom domain, if specified
     if (inputs.domain) {
-      const domain = await this.load('@serverless/domain')
+      const domain = await this.load('@ublend-npm/serverless-compoonent-domain')
       const subdomain = inputs.domain.split('.')[0]
       const secondLevelDomain = inputs.domain.replace(`${subdomain}.`, '')
 
       const domainInputs = {
+        region: this.state.region,
         domain: secondLevelDomain,
         subdomains: {}
+      }
+
+      // eslint-disable-next-line prefer-destructuring
+      let cloudFront = inputs.cloudFront
+      const { institution } = inputs
+      if (inputs.securityHeaders) {
+        cloudFront = {
+          ...cloudFront,
+          customLambdaAssociations: [
+            {
+              functionName: `${institution}-security-headers-injector-prod-injectSecurityHeaders`,
+              type: 'origin-response'
+            }
+          ]
+        }
       }
 
       domainInputs.subdomains[subdomain] = {
         url: this.state.url,
         bucketName: this.state.bucketName,
-        cloudFront: inputs.cloudFront
+        cloudFront
       }
+
       const domainOutputs = await domain(domainInputs)
 
       outputs.domain = domainOutputs.domains[0]
@@ -153,7 +170,7 @@ class Website extends Component {
     // Remove custom domain, if specified
     if (this.state.domain) {
       this.context.debug(`Removing custom domain.`)
-      const domain = await this.load('@serverless/domain')
+      const domain = await this.load('@ublend-npm/serverless-compoonent-domain')
       await domain.remove()
     }
 
