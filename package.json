@@ -1,6 +1,6 @@
 {
   "name": "@ublend-npm/serverless-website-component",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
@@ -15,7 +15,7 @@
     "@serverless/aws-s3": "^2.0.0",
     "@serverless/core": "^1.0.0",
     "@ublend-npm/serverless-compoonent-domain": "^0.0.8",
-    "aws-sdk": "2.1259.0"
+    "aws-sdk": "^2.1259.0"
   },
   "devDependencies": {
     "babel-eslint": "9.0.0",
