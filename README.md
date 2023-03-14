@@ -88,3 +88,9 @@ $ serverless
 ### New to Components?
 
 Checkout the [Serverless Components](https://github.com/serverless/components) repo for more information.
+
+&nbsp;
+
+### Publishing new versions
+New versions of this fork should be published from the `master` branch
+using `npm publish`. Remember to bump the package version as appropriate before publishing.
