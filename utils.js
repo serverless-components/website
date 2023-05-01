@@ -1,6 +1,13 @@
 const { utils } = require('@serverless/core')
 
 const configureBucketForHosting = async (s3, bucketName) => {
+  const publicAccessBlockConfig = {
+    BlockPublicAcls: false,
+    BlockPublicPolicy: false,
+    IgnorePublicAcls: false,
+    RestrictPublicBuckets: false
+  }
+
   const s3BucketPolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -41,6 +48,13 @@ const configureBucketForHosting = async (s3, bucketName) => {
   }
 
   try {
+    await s3
+      .putPublicAccessBlock({
+        Bucket: bucketName,
+        PublicAccessBlockConfiguration: publicAccessBlockConfig
+      })
+      .promise()
+
     await s3
       .putBucketPolicy({
         Bucket: bucketName,
